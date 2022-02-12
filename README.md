@@ -6,7 +6,7 @@ Script for automating a large assortment of AME related actions.
 
 ## Usage
 
-You can download the script by going to the [latest release](https://git.ameliorated.info/Joe/Central-AME-Script/releases/latest) and downloading `Central-AME-Script.cmd` from the Downloads section.
+You can download the script by going to the [latest release](https://git.ameliorated.info/Joe/Central-AME-Script/releases/latest) and downloading `CentralAMEScript.zip` from the Downloads section.
 
 Alternatively, you could clone the repository:
 
