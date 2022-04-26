@@ -6,7 +6,7 @@ Script for automating a large assortment of AME related actions.
 
 ## Usage
 
-You can download the script by going to the [latest release](https://git.ameliorated.info/Joe/Central-AME-Script/releases/latest) and downloading `CentralAMEScript.zip` from the Downloads section.
+You can download the script by going to the [latest release](https://git.ameliorated.info/Joe/Central-AME-Script/releases/latest) and downloading `Central-AME-Script.zip` from the Downloads section.
 
 Alternatively, you could clone the repository:
 
@@ -32,9 +32,17 @@ Similarly, the following command is used for changing the password:
 
 #### Lockscreen Image
 
-This function allows for changing the lockscreen image. This is a modified version of [LoganDark's lockscreen-img script](https://git.ameliorated.info/LoganDark/lockscreen-img).
+This function allows for changing the lockscreen image.
 
-It works by taking ownership of the existing lockscreen image files, and replacing them with the new image supplied by the user.
+This is a modified version of [LoganDark's lockscreen-img script](https://git.ameliorated.info/LoganDark/lockscreen-img).
+
+#### Profile Image
+
+This function allows for changing the user's profile (PFP) image.
+
+It works by taking ownership of the existing profile image files, and replacing them with the new image supplied by the user. Several necessary registry changes are made as well.
+
+This is a modified version of [LoganDark's profile-img script](https://git.ameliorated.info/LoganDark/profile-img).
 
 #### User Elevation
 
@@ -92,9 +100,21 @@ Or the following for enabling the requirement:
 
 ## Extra Functions
 
-Currently this section only contains legacy functions, these are only useful for versions of AME predating the [REDACTED].
+This section contains small, beta, or legacy functions. Legacy functions are only useful for versions of AME predating the [REDACTED].
 
-#### Windows Script Host
+#### Hibernation
+
+This function allows for enabling or disabling the hibernation option in Windows.
+
+At its core, the following commands are used:
+
+    powercfg /HIBERNATE /TYPE FULL
+
+Or the following for disabling hibernation:
+
+    powercfg /HIBERNATE OFF
+
+#### Windows Script Host (Legacy)
 
 This function allows for enabling or disabling Windows Script Host (WSH). WSH is necessary for some programs.
 
@@ -108,7 +128,7 @@ Or the following for disabling WSH:
     reg add "HKEY_USERS\<userSID>\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f
     reg add "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f
 
-#### NCSI Active Probing
+#### NCSI Active Probing (Legacy)
 
 This function allows for enabling or disabling NCSI Active Probing. Some applications require this to be enabled.
 
@@ -119,6 +139,12 @@ At its core, it uses the following command:
 Or the following for disabling NCSI Active Probing:
 
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing /t REG_DWORD /d 0 /f
+
+#### New User
+
+This function allows for creating partially functional and pre-configured users in Windows AME.
+
+To do this, it uses a standard user creation command, followed by many registry edits to make the new user usable.
 
 ## Known Issues
 
