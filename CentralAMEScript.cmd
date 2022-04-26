@@ -2,7 +2,7 @@
 REM ---------------------------START----------------------------
 MODE 80, 25
 TITLE Central AME Script & COLOR 70
-SET "ver=v0.9"
+SET "ver=v1.0"
 REM Allows for more flexibility with these two variables
 FOR /F "delims=" %%d in ('echo "%~dp0"') DO SET "dirPath=%%d"
 SET "dirPath=%dirPath:~1,-1%"
