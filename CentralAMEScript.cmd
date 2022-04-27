@@ -20,9 +20,10 @@ IF /I "%~1"=="updateFinished" GOTO AUX-UPDATEFINISHED
 NET SESSION > NUL 2>&1
 IF %ERRORLEVEL% GTR 0 GOTO PRE-ADMINCHECK2
 
-CALL :AUX-ELEVATIONCHECK
+CALL :AUX-ELEVATIONCHECK > NUL 2>&1
 
-IF /I "%currentUsername%"=="RestartRequired" (
+ECHO "%currentUsername%" | FINDSTR /X /c:""""RestartRequired""" " && SET "userRestart=true"
+IF "%userRestart%"=="true" (
 	ECHO Running this script after a username change may cause serious damage^! & ECHO.
 	CHOICE /C YN /N /M "Run anyways? (Y/N): "
 		IF %ERRORLEVEL%==1 GOTO HOME-MAINMENU
@@ -32,9 +33,20 @@ GOTO HOME-MAINMENU
 :PRE-ADMINCHECK2
 
 POWERSHELL -NoP -C "Start-Process '%scriptPath%' -Verb RunAs" > NUL 2>&1
-IF %ERRORLEVEL% GTR 0 CHOICE /C YN /N /M "Elevation canceled, run with limited functionality? (Y/N): "
-	IF %ERRORLEVEL%==1 SET lim=rem & GOTO HOME-MAINMENU
-	IF %ERRORLEVEL%==2 EXIT /B 0
+IF %ERRORLEVEL% GTR 0 (
+	CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
+	ECHO                Elevation canceled, run with limited functionality?
+	ECHO                                     [Y]   [N]
+	ECHO            __________________________________________________________ & ECHO.
+	CHOICE /C YN /N /M "%BS%           Choose an option: "
+		IF ERRORLEVEL 2 (
+			EXIT /B 0
+		) ELSE (
+			SET "lim=rem "
+			GOTO HOME-MAINMENU
+		)
+)
+
 EXIT /B 0
 REM -------------------------START-END--------------------------
 
@@ -81,7 +93,11 @@ ECHO                  [0] Return to Menu & ECHO                  [X] Exit & ECHO
 		%lim%IF %ERRORLEVEL%==1 GOTO HIBERNATE-MENU
 		%lim%IF %ERRORLEVEL%==2 GOTO WSH-MENU
 		%lim%IF %ERRORLEVEL%==3 GOTO NCSI-MENU
-		%lim%IF %ERRORLEVEL%==4 GOTO NEWUSER-MENU
+		%lim%IF %ERRORLEVEL%==4 (
+		%lim%	CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO              WARNING: This is a beta feature, use at your own risk. & ECHO            __________________________________________________________ & ECHO.
+		%lim%	PAUSE > NUL|SET /P =%BS%           Press any key to to continue: 
+		%lim%	GOTO NEWUSER-MENU
+		%lim%)
 		IF %ERRORLEVEL%==5 GOTO HOME-MAINMENU
 		IF %ERRORLEVEL%==6 EXIT /B 0
 	GOTO HOME-EXTRA
@@ -97,7 +113,7 @@ ECHO. & ECHO                  [0] Return to Menu & ECHO                  [X] Exi
 CHOICE /C 12340X /N /M "%BS%           Choose a menu option: "
 	%lim%IF %ERRORLEVEL%==1 SET "lpStatus=" & GOTO DISPLANG-MENUP1
 	IF %ERRORLEVEL%==2 GOTO KBLANG-LANGS
-	%lim%IF %ERRORLEVEL%==3 SET "lpStatus=added"L & GOTO DISPLANG-MENUP1
+	%lim%IF %ERRORLEVEL%==3 SET "lpStatus=added" & GOTO DISPLANG-MENUP1
 	%lim%IF %ERRORLEVEL%==4 SET "lpStatus=removed" & GOTO DISPLANG-MENUP1
 	IF %ERRORLEVEL%==5 GOTO HOME-MAINMENU
 	IF %ERRORLEVEL%==6 EXIT /B 0
@@ -124,61 +140,59 @@ CHOICE /C 1230X /N /M "%BS%           Choose a menu option: "
 
 :USERPASS-USERNAME
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 SET "newUsername="
-SET /P "newUsername=%BS%           Enter the new Username, or enter 'Cancel' to quit: "
-	IF /I "%newUsername%"=="Cancel" ENDLOCAL & GOTO USERPASS-MENU
-	IF "%newUsername%"=="" (
-	ECHO. & ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
-	PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-	ENDLOCAL & GOTO USERPASS-MENU )
+SET /P "newUsername=%BS%           Enter the new username, or enter 'Cancel': "
+	ECHO "%newUsername%" | FINDSTR /I /X /c:""""Cancel""" ">NUL 2>&1 && ENDLOCAL && GOTO USERPASS-MENU
+	ECHO "%newUsername%" | FINDSTR /I /X /c:""""""" ">NUL 2>&1 && SET "blankUsr=true"
+			IF "%blankUsr%"=="true" (
+			ECHO. & ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
+			PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
+			ENDLOCAL & GOTO USERPASS-MENU
+		)
+
 TIMEOUT /T 1 /NOBREAK > NUL
-FOR /F "usebackq tokens=3" %%A IN (`WMIC useraccount where "name='%currentUsername%'" rename '%newUsername%'`) DO SET "wmicOutput=%%A" > NUL 2>&1
-	IF "%wmicOutput%"=="0;" ENDLOCAL & SET "currentUsername=%newUsername%" & ECHO. & ECHO                           Username Changed Successfully & ECHO                             A restart is recommended.
+FOR /F "usebackq tokens=3" %%A IN (`WMIC useraccount where "name='%currentUsername%'" rename "%newUsername%"`) DO SET "wmicOutput=%%A" > NUL 2>&1
+	IF "%wmicOutput%"=="0;" ENDLOCAL & SET "currentUsername=%newUsername%" & ECHO. & ECHO. & ECHO                           Username Changed Successfully & ECHO                             A restart is recommended. & SET "upLoc=HOME-MAINMENU"
 	REM This should only happen if the user changes their username AND closes/re-opens the .cmd before restarting.
-	IF "%wmicOutput%"=="Available." ENDLOCAL & ECHO. & ECHO               You must restart before changing your username again.
-	IF "%wmicOutput%"=="9;" ENDLOCAL & ECHO. & ECHO                                  Invalid input. & SET "loc=USERPASS-MENU"
+	IF "%wmicOutput%"=="Available." ENDLOCAL & ECHO. & ECHO. & ECHO               You must restart before changing your username again. & SET "upLoc=USERPASS-MENU"
+	IF "%wmicOutput%"=="9;" ENDLOCAL & ECHO. & ECHO. & ECHO                                  Invalid input. & SET "upLoc=USERPASS-MENU"
+	IF "%wmicOutput%"=="" ENDLOCAL & ECHO. & ECHO. & ECHO                              Unable to parse output. & SET "upLoc=USERPASS-MENU"
 ECHO            __________________________________________________________ & ECHO.
 PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-GOTO HOME-MAINMENU
+GOTO %upLoc%
 
 :USERPASS-PASSWORD
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 SET "newPassword="
-SET /P "newPassword=%BS%           Enter the new Password, or enter 'Cancel' to quit: "
-	IF /I "%newPassword%"=="Cancel" ENDLOCAL & GOTO USERPASS-MENU
-	IF "%newPassword%"=="" (
-	ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
-	PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-	ENDLOCAL & GOTO USERPASS-MENU )
+SET /P "newPassword=%BS%           Enter the new password, or enter 'Cancel': "
+	ECHO "%newPassword%" | FINDSTR /I /X /c:""""Cancel""" ">NUL 2>&1 && ENDLOCAL && GOTO USERPASS-MENU
+
 TIMEOUT /T 1 /NOBREAK > NUL
 NET user "%currentUsername%" "%newPassword%" > NUL 2>&1
-	IF %ERRORLEVEL% LEQ 0 ECHO. & ECHO. & ECHO                           Password Changed Successfully
+	IF %ERRORLEVEL% LEQ 0 ECHO. & ECHO. & ECHO                           Password Changed Successfully & SET "upLoc=HOME-MAINMENU"
 	REM This should only happen if the user changes their username AND closes/re-opens the .cmd before restarting.
-	IF %ERRORLEVEL% GTR 0 ECHO. & ECHO. & ECHO. & ECHO                  You must restart after changing your username. & ECHO.
+	IF %ERRORLEVEL% GTR 0 ECHO. & ECHO. & ECHO                                An error occurred. & SET "upLoc=USERPASS-MENU"
 ECHO            __________________________________________________________ & ECHO.
 PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-ENDLOCAL & GOTO HOME-MAINMENU
+ENDLOCAL & GOTO %upLoc%
 
 :USERPASS-ADMINPASSWORD
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 SET "newPassword="
-SET /P "newPassword=%BS%           Enter the new Password, or enter 'Cancel' to quit: "
-	IF /I "%newPassword%"=="Cancel" GOTO USERPASS-MENU
-	IF "%newPassword%"=="" (
-	ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
-	PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-	GOTO USERPASS-MENU )
+SET /P "newPassword=%BS%           Enter the new password, or enter 'Cancel': "
+	ECHO "%newPassword%" | FINDSTR /I /X /c:""""Cancel""" ">NUL 2>&1 && ENDLOCAL && GOTO USERPASS-MENU
+
 TIMEOUT /T 1 /NOBREAK > NUL
 NET user "Administrator" "%newPassword%" > NUL 2>&1
-	IF %ERRORLEVEL% LEQ 0 ECHO. & ECHO. & ECHO                        Admin Password Changed Successfully
+	IF %ERRORLEVEL% LEQ 0 ECHO. & ECHO. & ECHO                    Administrator Password Changed Successfully & SET "upLoc=HOME-MAINMENU"
 	REM This should only happen if the user changes their username AND closes/re-opens the .cmd before restarting.
-	IF %ERRORLEVEL% GTR 0 ECHO. & ECHO. & ECHO. & ECHO                                  Action failed. & ECHO.
+	IF %ERRORLEVEL% GTR 0 ECHO. & ECHO. & ECHO                                  Action failed. & SET "upLoc=USERPASS-MENU"
 ECHO            __________________________________________________________ & ECHO.
 PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-ENDLOCAL & GOTO HOME-MAINMENU
+ENDLOCAL & GOTO %upLoc%
 REM ------------------------USERPASS-END------------------------
 
 
@@ -193,11 +207,13 @@ CLS & ECHO. & ECHO            __________________________________________________
 DIR /B "%SYSTEMDRIVE%\Users" | FINDSTR /x "%possibleUserDir%" > NUL 2>&1
 	IF %ERRORLEVEL% LEQ 0 SET "UserPath=\%possibleUserDir%"
 
-FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "IMAGEPATH=%%~I"
-	IF "%IMAGEPATH%" =="" (
-		ECHO. & ECHO                             You must select an image. & ECHO            __________________________________________________________ & ECHO.
-		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU )
+FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "lockImgPath=%%~I"
+	ECHO "%lockImgPath%" | FINDSTR /X /c:""""""" ">NUL 2>&1 && SET "lockBlank=true"
+		IF "%lockBlank%"=="true" (
+			ECHO. & ECHO                             You must select an image. & ECHO            __________________________________________________________ & ECHO.
+			PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
+			ENDLOCAL & GOTO HOME-MAINMENU
+		)
 
 CHOICE /C YN /N /M "%BS%           Remove lockscreen blur? (Y/N): "
 	IF %ERRORLEVEL%==1 REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v DisableAcrylicBackgroundOnLogon /t REG_DWORD /d 1 /f > NUL
@@ -209,7 +225,7 @@ TIMEOUT /T 1 /NOBREAK > NUL
 REM Copy wallpaper to the right spot
 TAKEOWN /F "%WINDIR%\Web\Screen\img100.jpg">NUL 2>&1 & TAKEOWN /F "%WINDIR%\Te\Web\Screen\img103.png">NUL 2>&1 & TAKEOWN /F "%WINDIR%\Web\Wallpaper\Windows\img0.jpg" > NUL 2>&1
 ICACLS "%WINDIR%\Web\Screen\img100.jpg" /reSET>NUL & ICACLS "%WINDIR%\Web\Screen\img103.png" /reSET>NUL & ICACLS "%WINDIR%\Web\Wallpaper\Windows\img0.jpg" /reSET > NUL
-COPY "%IMAGEPATH%" "%WINDIR%\Web\Screen\img100.jpg" /y>NUL & COPY "%IMAGEPATH%" "%WINDIR%\Web\Screen\img103.png" /y>NUL & COPY "%IMAGEPATH%" "%WINDIR%\Web\Wallpaper\Windows\img0.jpg" /y > NUL
+COPY "%lockImgPath%" "%WINDIR%\Web\Screen\img100.jpg" /y>NUL & COPY "%lockImgPath%" "%WINDIR%\Web\Screen\img103.png" /y>NUL & COPY "%lockImgPath%" "%WINDIR%\Web\Wallpaper\Windows\img0.jpg" /y > NUL
 REM Clear cache
 TAKEOWN /R /D Y /F "%PROGRAMDATA%\Microsoft\Windows\SystemData" > NUL
 ICACLS "%PROGRAMDATA%\Microsoft\Windows\SystemData" /reSET /t > NUL
@@ -234,11 +250,13 @@ REM Used for default starting directory for file selection window
 DIR /B "%SYSTEMDRIVE%\Users" | FINDSTR /x "%possibleUserDir%" > NUL 2>&1
 	IF %ERRORLEVEL% LEQ 0 SET "UserPath=\%possibleUserDir%"
 
-FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "IMAGE=%%~I"
-	IF "%IMAGE%"=="" (
-		ECHO. & ECHO                             You must select an image & ECHO            __________________________________________________________ & ECHO.
-		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU )
+FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "pfpImgPath=%%~I"
+	ECHO "%pfpImgPath%" | FINDSTR /I /X /c:""""""" ">NUL 2>&1 && SET "pfpBlank=true"
+		IF "%pfpBlank%"=="true" (
+			ECHO. & ECHO                             You must select an image & ECHO            __________________________________________________________ & ECHO.
+			PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
+			ENDLOCAL & GOTO HOME-MAINMENU
+		)
 
 :PFP-DEPLOY
 
@@ -249,35 +267,35 @@ FOR /F "usebackq delims=" %%F IN (`WMIC useraccount where "name="%currentUsernam
 REM On recent Windows 10 versions, resolutions called for are:
 REM 32x32, 40x40, 48x48, 64x64, 96x96, 192x192, 208x208, 240x240, 424x424,
 REM 448x448, 1080x1080
-SET "FOLDER=%PUBLIC%\AccountPictures\%PFPSID%"
+SET "usrPfpDir=%PUBLIC%\AccountPictures\%PFPSID%"
 
-MKDIR "%FOLDER%" > NUL 2>&1
-TAKEOWN /r /d Y /f "%FOLDER%" > NUL
-ICACLS "%FOLDER%" /reset /t > NUL
-DEL /Q /F "%FOLDER%\*" > NUL
+MKDIR "%usrPfpDir%" > NUL 2>&1
+TAKEOWN /r /d Y /f "%usrPfpDir%" > NUL
+ICACLS "%usrPfpDir%" /reset /t > NUL
+DEL /Q /F "%usrPfpDir%\*" > NUL
 
-POWERSHELL -NoP -C "Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile((Get-Item """"%IMAGE%"""")); $a = New-Object System.Drawing.Bitmap(32, 32); $graph = [System.Drawing.Graphics]::FromImage($a); $graph.DrawImage($img, 0, 0, 32, 32); $a.Save("""%FOLDER%\32x32.png"""); $b = New-Object System.Drawing.Bitmap(40, 40); $graph = [System.Drawing.Graphics]::FromImage($b); $graph.DrawImage($img, 0, 0, 40, 40); $b.Save("""%FOLDER%\40x40.png"""); $c = New-Object System.Drawing.Bitmap(48, 48); $graph = [System.Drawing.Graphics]::FromImage($c); $graph.DrawImage($img, 0, 0, 48, 48); $c.Save("""%FOLDER%\48x48.png"""); $d = New-Object System.Drawing.Bitmap(64, 64); $graph = [System.Drawing.Graphics]::FromImage($d); $graph.DrawImage($img, 0, 0, 64, 64); $d.Save("""%FOLDER%\64x64.png"""); $e = New-Object System.Drawing.Bitmap(96, 96); $graph = [System.Drawing.Graphics]::FromImage($e); $graph.DrawImage($img, 0, 0, 96, 96); $e.Save("""%FOLDER%\96x96.png"""); $f = New-Object System.Drawing.Bitmap(192, 192); $graph = [System.Drawing.Graphics]::FromImage($f); $graph.DrawImage($img, 0, 0, 192, 192); $f.Save("""%FOLDER%\192x192.png"""); $g = New-Object System.Drawing.Bitmap(208, 208); $graph = [System.Drawing.Graphics]::FromImage($g); $graph.DrawImage($img, 0, 0, 208, 208); $g.Save("""%FOLDER%\208x208.png"""); $h = New-Object System.Drawing.Bitmap(240, 240); $graph = [System.Drawing.Graphics]::FromImage($h); $graph.DrawImage($img, 0, 0, 240, 240); $h.Save("""%FOLDER%\240x240.png"""); $i = New-Object System.Drawing.Bitmap(424, 424); $graph = [System.Drawing.Graphics]::FromImage($i); $graph.DrawImage($img, 0, 0, 424, 424); $i.Save("""%FOLDER%\424x424.png"""); $j = New-Object System.Drawing.Bitmap(448, 448); $graph = [System.Drawing.Graphics]::FromImage($j); $graph.DrawImage($img, 0, 0, 448, 448); $j.Save("""%FOLDER%\448x448.png"""); $k = New-Object System.Drawing.Bitmap(1080, 1080); $graph = [System.Drawing.Graphics]::FromImage($k); $graph.DrawImage($img, 0, 0, 1080, 1080); $k.Save("""%FOLDER%\1080x1080.png""")"
+POWERSHELL -NoP -C "Add-Type -AssemblyName System.Drawing; $img = [System.Drawing.Image]::FromFile((Get-Item '%pfpImgPath%')); $a = New-Object System.Drawing.Bitmap(32, 32); $graph = [System.Drawing.Graphics]::FromImage($a); $graph.DrawImage($img, 0, 0, 32, 32); $a.Save('%usrPfpDir%\32x32.png'); $b = New-Object System.Drawing.Bitmap(40, 40); $graph = [System.Drawing.Graphics]::FromImage($b); $graph.DrawImage($img, 0, 0, 40, 40); $b.Save('%usrPfpDir%\40x40.png'); $c = New-Object System.Drawing.Bitmap(48, 48); $graph = [System.Drawing.Graphics]::FromImage($c); $graph.DrawImage($img, 0, 0, 48, 48); $c.Save('%usrPfpDir%\48x48.png'); $d = New-Object System.Drawing.Bitmap(64, 64); $graph = [System.Drawing.Graphics]::FromImage($d); $graph.DrawImage($img, 0, 0, 64, 64); $d.Save('%usrPfpDir%\64x64.png'); $e = New-Object System.Drawing.Bitmap(96, 96); $graph = [System.Drawing.Graphics]::FromImage($e); $graph.DrawImage($img, 0, 0, 96, 96); $e.Save('%usrPfpDir%\96x96.png'); $f = New-Object System.Drawing.Bitmap(192, 192); $graph = [System.Drawing.Graphics]::FromImage($f); $graph.DrawImage($img, 0, 0, 192, 192); $f.Save('%usrPfpDir%\192x192.png'); $g = New-Object System.Drawing.Bitmap(208, 208); $graph = [System.Drawing.Graphics]::FromImage($g); $graph.DrawImage($img, 0, 0, 208, 208); $g.Save('%usrPfpDir%\208x208.png'); $h = New-Object System.Drawing.Bitmap(240, 240); $graph = [System.Drawing.Graphics]::FromImage($h); $graph.DrawImage($img, 0, 0, 240, 240); $h.Save('%usrPfpDir%\240x240.png'); $i = New-Object System.Drawing.Bitmap(424, 424); $graph = [System.Drawing.Graphics]::FromImage($i); $graph.DrawImage($img, 0, 0, 424, 424); $i.Save('%usrPfpDir%\424x424.png'); $j = New-Object System.Drawing.Bitmap(448, 448); $graph = [System.Drawing.Graphics]::FromImage($j); $graph.DrawImage($img, 0, 0, 448, 448); $j.Save('%usrPfpDir%\448x448.png'); $k = New-Object System.Drawing.Bitmap(1080, 1080); $graph = [System.Drawing.Graphics]::FromImage($k); $graph.DrawImage($img, 0, 0, 1080, 1080); $k.Save('%usrPfpDir%\1080x1080.png')"
 
-SET "KEY=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\%PFPSID%"
+SET "usrPfpRegKey=HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\%PFPSID%"
 
 REM Runs the reg delete command as SYSTEM
-SCHTASKS /create /tn "AME PFPREG" /tr "CMD /C 'REG DELETE '%KEY%' /f'" /sc MONTHLY /f /rl HIGHEST /ru "SYSTEM" > NUL
+SCHTASKS /create /tn "AME PFPREG" /tr "CMD /C 'REG DELETE '%usrPfpRegKey%' /f'" /sc MONTHLY /f /rl HIGHEST /ru "SYSTEM" > NUL
 SCHTASKS /run /tn "AME PFPREG" > NUL
 SCHTASKS /delete /tn "AME PFPREG" /f > NUL
 
-REG ADD "%KEY%" /f > NUL
-REG ADD "%KEY%" /v Image32 /t REG_SZ /d "%FOLDER%\32x32.png" /f > NUL
-REG ADD "%KEY%" /v Image40 /t REG_SZ /d "%FOLDER%\40x40.png" /f > NUL
-REG ADD "%KEY%" /v Image48 /t REG_SZ /d "%FOLDER%\48x48.png" /f > NUL
-REG ADD "%KEY%" /v Image64 /t REG_SZ /d "%FOLDER%\64x64.png" /f > NUL
-REG ADD "%KEY%" /v Image96 /t REG_SZ /d "%FOLDER%\96x96.png" /f > NUL
-REG ADD "%KEY%" /v Image192 /t REG_SZ /d "%FOLDER%\192x192.png" /f > NUL
-REG ADD "%KEY%" /v Image208 /t REG_SZ /d "%FOLDER%\208x208.png" /f > NUL
-REG ADD "%KEY%" /v Image240 /t REG_SZ /d "%FOLDER%\240x240.png" /f > NUL
-REG ADD "%KEY%" /v Image424 /t REG_SZ /d "%FOLDER%\424x424.png" /f > NUL
-REG ADD "%KEY%" /v Image448 /t REG_SZ /d "%FOLDER%\448x448.png" /f > NUL
-REG ADD "%KEY%" /v Image1080 /t REG_SZ /d "%FOLDER%\1080x1080.png" /f > NUL
-REG ADD "HKU\%PFPSID%\SOFTWARE\OpenShell\StartMenu\Settings" /v UserPicturePath /t REG_SZ /d "%FOLDER%\448x448.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image32 /t REG_SZ /d "%usrPfpDir%\32x32.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image40 /t REG_SZ /d "%usrPfpDir%\40x40.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image48 /t REG_SZ /d "%usrPfpDir%\48x48.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image64 /t REG_SZ /d "%usrPfpDir%\64x64.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image96 /t REG_SZ /d "%usrPfpDir%\96x96.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image192 /t REG_SZ /d "%usrPfpDir%\192x192.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image208 /t REG_SZ /d "%usrPfpDir%\208x208.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image240 /t REG_SZ /d "%usrPfpDir%\240x240.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image424 /t REG_SZ /d "%usrPfpDir%\424x424.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image448 /t REG_SZ /d "%usrPfpDir%\448x448.png" /f > NUL
+REG ADD "%usrPfpRegKey%" /v Image1080 /t REG_SZ /d "%usrPfpDir%\1080x1080.png" /f > NUL
+REG ADD "HKU\%PFPSID%\SOFTWARE\OpenShell\StartMenu\Settings" /v UserPicturePath /t REG_SZ /d "%usrPfpDir%\448x448.png" /f > NUL
 
 GPUPDATE /force > NUL
 
@@ -292,7 +310,7 @@ REM -------------------------ELEVATION--------------------------
 :ELEVATE-MENU	
 
 SETLOCAL
-CLS & ECHO            %currentUsername%: %userStatus% & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO                  [1] Elevate your user & ECHO                  [2] De-elevate your user & ECHO. & ECHO                  [0] Return to Menu & ECHO                  [X] Exit & ECHO. & ECHO            __________________________________________________________ & ECHO.
+CLS & POWERSHELL -NoP -C "Write-Output '           %currentUsername%: %userStatus%'" & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO                  [1] Elevate your user & ECHO                  [2] De-elevate your user & ECHO. & ECHO                  [0] Return to Menu & ECHO                  [X] Exit & ECHO. & ECHO            __________________________________________________________ & ECHO.
 CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 	IF %ERRORLEVEL%==1 SET "elevMenu=1" & GOTO ELEVATE-ELEVATE
 	IF %ERRORLEVEL%==2 SET "elevMenu=2" & GOTO ELEVATE-REVOKE
@@ -301,13 +319,11 @@ CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 
 :ELEVATE-ELEVATE
 
-SET "cenStr=%currentUsername% is already an Administrator." & CALL :AUX-CENTERTEXT
 IF "%userStatus%"=="Elevated" (
-	CLS & ECHO            %currentUsername%: %userStatus% & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO. & ECHO %cenOut% & ECHO            __________________________________________________________& ECHO.	
+	CLS & POWERSHELL -NoP -C "Write-Output '           %currentUsername%: %userStatus%'" & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO. & ECHO                   The current user is already an Administrator. & ECHO            __________________________________________________________& ECHO.	
 	PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
 	ENDLOCAL & GOTO ELEVATE-MENU )
-SET "cenStr=Elevating %currentUsername% to Administrator..." & CALL :AUX-CENTERTEXT
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO %cenOut%
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO                   Granting Admin rights to the current user...
 TIMEOUT /T 2 /NOBREAK > NUL
 NET localgroup administrators "%currentUsername%" /add > NUL 2>&1
 	IF %ERRORLEVEL% GTR 0 ECHO. & SET "elevFail=true"
@@ -316,13 +332,12 @@ GOTO ELEVATE-FINISH
 
 :ELEVATE-REVOKE
 
-SET "cenStr=%currentUsername% is not an Administator." & CALL :AUX-CENTERTEXT
 IF "%userStatus%"=="Not Elevated" (
-	CLS & ECHO           %currentUsername%: %userStatus% & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO. & ECHO %cenOut% & ECHO            __________________________________________________________& ECHO.
+	CLS & POWERSHELL -NoP -C "Write-Output '           %currentUsername%: %userStatus%'" & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO. & ECHO                     The current user is not an Administrator. & ECHO            __________________________________________________________& ECHO.
 	PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
 	ENDLOCAL & GOTO ELEVATE-MENU )
-SET "cenStr=Revoking admin rights for %currentUsername%..." & CALL :AUX-CENTERTEXT
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO %cenOut%
+
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO                  Revoking Admin rights from the current user...
 TIMEOUT /T 2 /NOBREAK > NUL 2>&1
 NET localgroup administrators "%currentUsername%" /delete > NUL 2>&1
 	IF %ERRORLEVEL% GTR 0 ECHO. & SET "elevFail=true"
@@ -335,10 +350,9 @@ IF "%elevFail%"=="true" (
 	ECHO. & ECHO. & ECHO                      Action failed. A restart may fix this. & ECHO            __________________________________________________________ & ECHO.
 	PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
 	ENDLOCAL & GOTO HOME-MAINMENU )
-IF "%elevMenu%"=="1" SET "cenStr=%currentUsername% is now an Administrator"
-IF "%elevMenu%"=="2" SET "cenStr=Admin rights have been revoked for %currentUsername%"
-CALL :AUX-CENTERTEXT
-ECHO. & ECHO. & ECHO %cenOut% & ECHO                        A restart is needed to take effect. & ECHO            __________________________________________________________ & ECHO.
+IF "%elevMenu%"=="1" SET "upOut=                    The current user is now an Administrator"
+IF "%elevMenu%"=="2" SET "upOut=               Admin rights have been revoked for the current user"
+ECHO. & ECHO. & ECHO %upOut% & ECHO                        A restart is needed to take effect. & ECHO            __________________________________________________________ & ECHO.
 CHOICE /C YN /N /M "%BS%           Would you like to restart now? (Y/N): "
 	IF %ERRORLEVEL%==1 SHUTDOWN -R -T 0 & EXIT 0
 	IF %ERRORLEVEL%==2 ENDLOCAL & SET "userStatus=%userStatus%" & GOTO HOME-MAINMENU
@@ -460,25 +474,25 @@ WHERE 7z.exe>NUL 2>&1 && SET "dispSkip0=rem "
 WHERE choco.exe>NUL 2>&1 && SET "dispChoco=true"
 
 DISM /Online /Get-Intl /English | FIND "Installed language(s): %langSel%" > NUL 2>&1
-	IF %ERRORLEVEL% LEQ 0 GOTO DISPLANG-USERCHECK
+	IF %ERRORLEVEL% LEQ 0 ECHO. & GOTO DISPLANG-USERCHECK
 
 FOR /F tokens^=2^ delims^=^" %%A IN ('TASKLIST /FI "IMAGENAME eq lpksetup.exe" /NH /FO csv') DO SET lpkStatus=%%A
 	IF "%lpkStatus%"=="," (
-		ECHO. & ECHO. & ECHO                  All instances of lpksetup.exe must be closed. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU )
+		ECHO. & ECHO. & ECHO                  All instances of lpksetup.exe must be closed. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE )
 
-ECHO                   A ~%dispDl%GB Language Packs ISO must be downloaded & ECHO.
+ECHO. & ECHO            A ~%dispDl%GB Language Packs ISO must be downloaded & ECHO.
 CHOICE /C YN /N /M "%BS%           Continue? (Y/N): "
 	IF %ERRORLEVEL%==2 ENDLOCAL & GOTO HOME-MAINMENU
 
 PING -n 1 archlinux.org -w 20000 > NUL 2>&1
 	IF %ERRORLEVEL% GTR 0 (
-		ECHO. & ECHO. & ECHO                        An internet connection is required. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU )
+		ECHO. & ECHO. & ECHO                        An internet connection is required. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE )
 
 FOR /F "tokens=2 delims==" %%A IN ('WMIC logicaldisk where "DeviceID='%~d0'" get FreeSpace /format:value') DO SET freeSpace=%%A
 	SET "freeSpace=%freeSpace:~0,-10%"
 	IF "%freeSpace%"=="" SET "freeSpace=1"
 	IF %freeSpace% LSS 5 (
-		ECHO. & ECHO. & ECHO                            Not enough free disk space. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU )
+		ECHO. & ECHO. & ECHO                            Not enough free disk space. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE )
 
 IF EXIST "%dirPath%LangPacks.ISO" DEL /Q "%dirPath%LangPacks.ISO"
 IF EXIST "%dirPath%LangPacks" RMDIR /Q /S "%dirPath%LangPacks"
@@ -490,7 +504,7 @@ IF "%dispDl%"=="2.5" CURL --range 0-2480000000 -L --progress-bar "https://softwa
 IF "%dispDl%"=="2.9" CURL --range 0-2900000000 -L --progress-bar "https://software-download.microsoft.com/download/pr/19041.1.191206-1406.vb_release_CLIENTLANGPACKDVD_OEM_MULTI.iso" --output "%dirPath%LangPacks.ISO"
 IF "%dispDl%"=="3.2" CURL --range 0-3230000000 -L --progress-bar "https://software-download.microsoft.com/download/pr/19041.1.191206-1406.vb_release_CLIENTLANGPACKDVD_OEM_MULTI.iso" --output "%dirPath%LangPacks.ISO"
 FOR %%A IN ("%dirPath%LangPacks.ISO") DO SET "langISOSize=%%~zA"
-	IF "%langISOSize"=="" SET "langISOSize=1"
+	IF "%langISOSize%"=="" SET "langISOSize=1"
 	REM Detects size of ISO file, this essentially allows for a simple error detection.
 	IF %langISOSize% LSS 700000 (
 		DEL /Q "%dirPath%LangPacks.ISO" > NUL
@@ -499,7 +513,7 @@ FOR %%A IN ("%dirPath%LangPacks.ISO") DO SET "langISOSize=%%~zA"
 :DISPLANG-INSTALL
 
 %dispSkip0%IF NOT "%dispChoco%"=="true" (
-%dispSkip0%    ECHO. & ECHO. & ECHO                       7zip or choclatey must be installed. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU )
+%dispSkip0%    ECHO. & ECHO. & ECHO                       7zip or choclatey must be installed. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE )
 %dispSkip0%ECHO. & ECHO                                Installing 7zip... & choco install -y --force --allow-empty-checksums "7zip" > NUL
 7z e -y -o"%dirPath%LangPacks" "%dirPath%LangPacks.ISO" x64\langpacks\*.cab > NUL 2>&1
 ECHO. & ECHO                 Installing language pack. This might take awhile & ECHO.
@@ -511,7 +525,7 @@ LPKSETUP /i %langSel% /p "%dirPath%LangPacks\Microsoft-Windows-Client-Language-P
 	POWERSHELL -NoP -C "$timeAfter = Get-Date -Date '%dateAfter% %timeAfter%'; Get-WinEvent -FilterHashtable @{Logname='Microsoft-Windows-LanguagePackSetup/Operational';StartTime=$timeAfter}" | FINDSTR "2014 2007" > NUL
 		IF %ERRORLEVEL% LSS 1 (
 			%dispSkip0%ECHO                                 Removing 7zip... & choco uninstall 7zip -y --force-dependencies --allow-empty-checksums>NUL & ECHO.
-			DEL /Q "%dirPath%LangPacks.ISO">NUL & RMDIR /Q /S "%dirPath%LangPacks" & ECHO. & ECHO. & ECHO                                  Action failed. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU
+			DEL /Q "%dirPath%LangPacks.ISO">NUL & RMDIR /Q /S "%dirPath%LangPacks" & ECHO. & ECHO. & ECHO                                  Action failed. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE
 		)
 	POWERSHELL -NoP -C "$timeAfter = Get-Date -Date '%dateAfter% %timeAfter%'; Get-WinEvent -FilterHashtable @{Logname='Microsoft-Windows-LanguagePackSetup/Operational';StartTime=$timeAfter}" | FINDSTR "2000" > NUL
 		IF %ERRORLEVEL% LSS 1 (
@@ -534,7 +548,7 @@ FOR /F tokens^=2^ delims^=^" %%A IN ('TASKLIST /FI "PID eq %scriptPID%" /FI "USE
 	IF NOT "%processRunOut%"=="," (
 		REM If %lim% = rem that means the script is NOT being run as administrator. There's a small chance someone attempts to run it as another non-admin user,
 		REM this would be problematic as schtasks requires admin privilages.
-		IF "%lim%"=="rem " ECHO. & ECHO. & ECHO                      Script must be run as the current user & ECHO                         or with administrator privilages. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU
+		IF "%lim%"=="rem " ECHO. & ECHO. & ECHO                      Script must be run as the current user & ECHO                         or with administrator privilages. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE
 		SETLOCAL ENABLEDELAYEDEXPANSION
 		SCHTASKS /CREATE /tn SetDispLang /tr "CMD /C 'START /min '' '%scriptPath%' LangSet %langSel% %makeKBDef%'" /sc ONSTART /ru "%currentUsername%" /it /f > NUL
 		REM RUNAS will work, however it requires the user to enter a password, and won't accept a blank one. This is a lot more simple and reliable
@@ -542,7 +556,8 @@ FOR /F tokens^=2^ delims^=^" %%A IN ('TASKLIST /FI "PID eq %scriptPID%" /FI "USE
 			WAITFOR Golden /T 10 > NUL 2>&1
 				IF !ERRORLEVEL! LSS 1 SCHTASKS /DELETE /tn SetDispLang /f>NUL & GOTO DISPLANG-COMPLETE
 			SCHTASKS /DELETE /tn SetDispLang /f > NUL
-			ENDLOCAL & ENDLOCAL & ECHO. & ECHO. & ECHO                                  Action failed. & ECHO            __________________________________________________________ & ECHO. & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU )
+			ENDLOCAL & ENDLOCAL & ECHO. & ECHO. & ECHO                                  Action failed. & ECHO            __________________________________________________________ & ECHO. & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE
+		)
 
 :DISPLANG-SETLANG
 
@@ -971,7 +986,7 @@ FOR /F tokens^=2^ delims^=^" %%A IN ('TASKLIST /FI "PID eq %scriptPID%" /FI "USE
 	IF NOT "%processRunOut%"=="," (
 		REM If %lim% = rem that means the script is NOT being run as administrator. There's a small chance someone attempts to run it as another non-admin user,
 		REM this would be problematic as schtasks requires admin privilages.
-		IF "%lim%"=="rem " ECHO. & ECHO. & ECHO                      Script must be run as the current user & ECHO                         or with administrator privilages. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU
+		IF "%lim%"=="rem " ECHO. & ECHO. & ECHO                      Script must be run as the current user & ECHO                         or with administrator privilages. & ECHO            __________________________________________________________ & ECHO. & ENDLOCAL & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE
 		SETLOCAL ENABLEDELAYEDEXPANSION
 		SCHTASKS /CREATE /tn SetDispLang /tr "CMD /C 'START /min '' '%scriptPath%' kbLangSet %kbLangSel% %kbMakeDef%'" /sc ONSTART /ru "%currentUsername%" /it /f > NUL
 		REM RUNAS will work, however it requires the user to enter a password, and won't accept a blank one. This is a lot more simple and reliable
@@ -979,7 +994,8 @@ FOR /F tokens^=2^ delims^=^" %%A IN ('TASKLIST /FI "PID eq %scriptPID%" /FI "USE
 			WAITFOR Golden /T 10 > NUL 2>&1
 				IF !ERRORLEVEL! LSS 1 SCHTASKS /DELETE /tn SetDispLang /f>NUL & GOTO KBLANG-COMPLETE
 			SCHTASKS /DELETE /tn SetDispLang /f > NUL
-			ENDLOCAL & ENDLOCAL & ECHO. & ECHO. & ECHO                              Action may have failed. & ECHO            __________________________________________________________ & ECHO. & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-MAINMENU )
+			ENDLOCAL & ENDLOCAL & ECHO. & ECHO. & ECHO                              Action may have failed. & ECHO            __________________________________________________________ & ECHO. & PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: & GOTO HOME-LANGUAGE
+		)
 
 :KBLANG-SETLANG
 
@@ -1010,17 +1026,23 @@ CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 :NOUSERNAME-DISABLE
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
-TIMEOUT /T 1 /NOBREAK > NUL
+
+ECHO                      Disabling username login requirement...
+TIMEOUT /T 2 /NOBREAK > NUL
 REG DELETE "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername /f > NUL 2>&1
-ECHO. & ECHO                  The username login requirement is now disabled & ECHO            __________________________________________________________ & ECHO.
+
+ECHO. & ECHO. & ECHO                  The username login requirement is now disabled & ECHO            __________________________________________________________ & ECHO.
 PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
 ENDLOCAL & GOTO HOME-MAINMENU
 :NOUSERNAME-ENABLE
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
-TIMEOUT /T 1 /NOBREAK > NUL
+
+ECHO                      Enabling username login requirement...
+TIMEOUT /T 2 /NOBREAK > NUL
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername /t REG_DWORD /d 1 /f > NUL 2>&1
-ECHO. & ECHO                   The username login requirement is now enabled & ECHO                        A restart is needed to take effect. & ECHO            __________________________________________________________ & ECHO.
+
+ECHO. & ECHO. & ECHO                   The username login requirement is now enabled & ECHO                        A restart is needed to take effect. & ECHO            __________________________________________________________ & ECHO.
 CHOICE /C YN /N /M "%BS%           Would you like to restart now? (Y/N): "
 	IF %ERRORLEVEL%==1 SHUTDOWN -R -T 0 & EXIT 0
 	IF %ERRORLEVEL%==2 ENDLOCAL & GOTO HOME-MAINMENU
@@ -1041,25 +1063,25 @@ CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 
 :HIBERNATE-ENABLE
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO                              Enabling Hibernation...
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO                              Enabling hibernation...
 TIMEOUT /T 2 /NOBREAK > NUL
 POWERCFG /HIBERNATE /TYPE FULL > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		ECHO. & ECHO. & ECHO                           Failed to enable hibernation. & ECHO                Hibernation may not be supported by your firmware. & ECHO            __________________________________________________________ & ECHO.
 		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU
+		ENDLOCAL & GOTO HOME-EXTRA
 	)
 SET "hibernate=enable" & GOTO HIBERNATE-FINISH
 
 :HIBERNATE-DISABLE
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO                             Disabling Hibernation...
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO                             Disabling hibernation...
 TIMEOUT /T 2 /NOBREAK > NUL
 POWERCFG /HIBERNATE OFF > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		ECHO. & ECHO. & ECHO                          Failed to disable hibernation. & ECHO            __________________________________________________________ & ECHO.
 		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU
+		ENDLOCAL & GOTO HOME-EXTRA
 	)
 SET "hibernate=disable" & GOTO HIBERNATE-FINISH
 
@@ -1090,7 +1112,7 @@ CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 SET "cenStr=Enabling WSH for %currentUsername%..." & CALL :AUX-CENTERTEXT
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & POWERSHELL -NoP -C "Write-Output '%cenOut%'"
 TIMEOUT /T 2 /NOBREAK > NUL
-FOR /F "tokens=* USEBACKQ" %%F IN (`WMIC useraccount where "name="%currentUsername%"" get sid ^| FINDSTR "S-"`) DO SET WSHSID=%%F
+FOR /F "usebackq tokens=*" %%F IN (`WMIC useraccount where "name="%currentUsername%"" get sid ^| FINDSTR "S-"`) DO SET WSHSID=%%F
 	SET WSHSID=%WSHSID:~0,-3%
 REG ADD "HKEY_USERS\%WSHSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f > NUL
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f > NUL
@@ -1101,7 +1123,7 @@ SET "wsh=enable" & GOTO WSH-FINISH
 SET "cenStr=Disabling WSH for %currentUsername%..." & CALL :AUX-CENTERTEXT
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & POWERSHELL -NoP -C "Write-Output '%cenOut%'"
 TIMEOUT /T 2 /NOBREAK > NUL
-FOR /F "tokens=* USEBACKQ" %%F IN (`WMIC useraccount where "name="%currentUsername%"" get sid ^| FINDSTR "S-"`) DO SET WSHSID=%%F
+FOR /F "usebackq tokens=*" %%F IN (`WMIC useraccount where "name="%currentUsername%"" get sid ^| FINDSTR "S-"`) DO SET WSHSID=%%F
 	SET WSHSID=%WSHSID:~0,-3%
 REG ADD "HKEY_USERS\%WSHSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f > NUL
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f > NUL
@@ -1164,9 +1186,6 @@ REM --------------------------NEWUSER--------------------------
 
 SETLOCAL
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO              WARNING: This is a beta feature, use at your own risk. & ECHO            __________________________________________________________ & ECHO.
-PAUSE > NUL|SET /P =%BS%           Press any key to to continue: 
-
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. & ECHO                  [1] Create a New User & ECHO                  [2] Remove Existing User & ECHO. & ECHO                  [0] Return to Menu & ECHO                  [X] Exit & ECHO. & ECHO            __________________________________________________________ & ECHO.
 CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 	IF %ERRORLEVEL%==1 GOTO NEWUSER-CREATE
@@ -1176,31 +1195,32 @@ CHOICE /C 120X /N /M "%BS%           Choose a menu option: "
 
 :NEWUSER-CREATE
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-SET /P "username=%BS%           Enter desired username, or enter 'Cancel' to quit: "
-	IF /I "%username%"=="Cancel" ENDLOCAL & GOTO HOME-MAINMENU
-
-	IF "%username%"=="" (
-		ECHO. & ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
-		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU
-	)
+SET /P "newUsername=%BS%           Enter desired username, or enter 'Cancel': "
+	ECHO "%newUsername%" | FINDSTR /I /X /c:""""Cancel""" ">NUL 2>&1 && ENDLOCAL && GOTO NEWUSER-MENU
+	ECHO "%newUsername%" | FINDSTR /I /X /c:""""""" ">NUL 2>&1 && SET "blankUsrN=true"
+		IF "%blankUsrN%"=="true" (
+			ECHO. & ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
+			PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
+			ENDLOCAL & GOTO NEWUSER-MENU
+		)
 
 ECHO.
-SET /P "password=%BS%           Enter desired password, or enter 'Cancel' to quit: "
-	IF /I "%password%"=="Cancel" ENDLOCAL & GOTO HOME-MAINMENU
+SET /P "newPassword=%BS%           Enter desired password, or enter 'Cancel': "
+	ECHO "%newPassword%" | FINDSTR /I /X /c:""""Cancel""" ">NUL 2>&1 && ENDLOCAL && GOTO NEWUSER-MENU
 
 ECHO. & ECHO                                 Creating user...
+TIMEOUT /T 2 /NOBREAK > NUL 2>&1
 
-NET user "%username%" "%password%" /add > NUL 2>&1
+NET user "%newUsername%" "%newPassword%" /add > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		ECHO. & ECHO. & ECHO                          Improper username or password. & ECHO            __________________________________________________________ & ECHO.
 		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
 		ENDLOCAL & GOTO HOME-MAINMENU
 	)
 
-TIMEOUT /T 1 /NOBREAK > NUL 2>&1
+
 
 ECHO. & ECHO                              Configuring new user...
 
@@ -1292,31 +1312,33 @@ ENDLOCAL & GOTO HOME-MAINMENU
 
 :NEWUSER-REMOVE
 
-CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-SET /P "usernameRemove=%BS%           Enter the user to be removed, or enter 'Cancel' to quit: "
-	IF /I "%username%"=="Cancel" ENDLOCAL & GOTO HOME-MAINMENU
-
-	IF "%username%"=="" (
-		ECHO. & ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
-		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU
-	)
-
-	IF "%usernameRemove%"=="%currentUsername%" (
-		ECHO. & ECHO. & ECHO                       User must not be the logged in user. & ECHO            __________________________________________________________ & ECHO.
-		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-		ENDLOCAL & GOTO HOME-MAINMENU
+SET /P "usernameRemove=%BS%           Enter the user to be removed, or enter 'Cancel': "
+	ECHO "%usernameRemove%" | FINDSTR /I /X /c:""""Cancel""" ">NUL 2>&1 && ENDLOCAL && GOTO NEWUSER-MENU
+	ECHO "%usernameRemove%" | FINDSTR /I /X /c:""""""" ">NUL 2>&1 && SET "blankUsrR=true"
+		IF "%blankUsrR%"=="true" (
+			ECHO. & ECHO. & ECHO                              Input cannot be blank. & ECHO            __________________________________________________________ & ECHO.
+			PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
+			ENDLOCAL & GOTO NEWUSER-MENU
+		)
+	ECHO "%usernameRemove%" | FINDSTR /I /X /c:""""%currentUsername%""" ">NUL 2>&1 && SET "sameUser=true"
+		IF "%sameUser%"=="true" (
+			ECHO. & ECHO            The specified user is the current user ^("%currentUsername%"^)
+			CHOICE /C YN /N /M "%BS%           Continue Anyways? (Y/N): "
+				IF ERRORLEVEL 2 ENDLOCAL & GOTO NEWUSER-MENU
 	)
 
 	NET USER "%usernameRemove%" > NUL 2>&1
 		IF %ERRORLEVEL% NEQ 0 (
-			ECHO. & ECHO. & ECHO                               User does not exist. & ECHO            __________________________________________________________ & ECHO.
+			ECHO. & ECHO. & ECHO                               User does not exist or deletion failed. & ECHO            __________________________________________________________ & ECHO.
 			PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
-			ENDLOCAL & GOTO HOME-MAINMENU
+			ENDLOCAL & GOTO NEWUSER-MENU
 		)
 
-ECHO. & ECHO                                 Removing user...
+ECHO. & ECHO                               Removing user...
+
+TIMEOUT /T 2 /NOBREAK > NUL 2>&1
 
 NET user "%usernameRemove%" /delete > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
@@ -1324,8 +1346,6 @@ NET user "%usernameRemove%" /delete > NUL 2>&1
 		PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
 		ENDLOCAL & GOTO HOME-MAINMENU
 	)
-
-TIMEOUT /T 1 /NOBREAK > NUL 2>&1
 
 ECHO. & ECHO. & ECHO                            User removed successfully. & ECHO            __________________________________________________________ & ECHO.
 PAUSE > NUL|SET /P =%BS%           Press any key to return to the Menu: 
@@ -1357,12 +1377,11 @@ SET /A "LEN=0"
 
 SETLOCAL ENABLEDELAYEDEXPANSION
 	:CENTERTEXT-LOOP
-		IF "!cenStr:~%LEN%!"=="" ENDLOCAL & SET "LEN=%LEN%" & GOTO CENTERTEXT-LOOPEND
+		ECHO "!cenStr:~%LEN%!" | FINDSTR /I /X /c:""""""" ">NUL 2>&1 && ENDLOCAL && SET "LEN=%LEN%" && GOTO CENTERTEXT-LOOPEND
   	  	SET /A "LEN=%LEN%+1"
+  	  	IF %LEN% GEQ 100 SET "cenOut=                                  Output Error" & EXIT /B 0
     	GOTO CENTERTEXT-LOOP
 	:CENTERTEXT-LOOPEND
-
-
 
 SET /A "oddCheck=%LEN% %% 2"
 IF "%oddCheck%"=="0" (SET "space=") ELSE (SET "space= ")
@@ -1383,7 +1402,7 @@ REM is hard to filter properly, thus why this method is used.
 FOR /F "tokens=2 delims=\" %%B IN ('WMIC computersystem get username') DO SET currentUsername=%%B
 	SET "currentUsername=%currentUsername:~0,-3%"
 	REM Detection for if user changed their username without restarting
-	IF "%currentUsername%"=="~0,-3" SET "currentUsername=RestartRequired"
+	ECHO "%currentUsername%" | FINDSTR /I /X /c:""""~0,-3""" ">NUL 2>&1 && SET "currentUsername=RestartRequired"
 	SET "possibleUserDir=%currentUsername%"
 EXIT /B 0
 REM -----------------------------------------------------------
@@ -1393,9 +1412,9 @@ REM -----------------------------------------------------------
 REM -----------------------------------------------------------
 :AUX-ELEVATIONCHECK
 
-IF /I "%currentUsername%"=="RestartRequired" SET "elevCheckUsername="
+ECHO "%currentUsername%" | FINDSTR /I /X /c:""""RestartRequired""" ">NUL 2>&1 && SET "userStatus=Unknown" && EXIT /B 0
 FOR /F "usebackq delims=" %%A IN (`NET user "%currentUsername%" ^| FINDSTR /i /c:"Local Group Memberships"`) DO SET "elevResult=%%A" > NUL 2>&1
-	ECHO "%elevResult%" | FINDSTR "Administrators" > NUL 2>&1
+	ECHO "%elevResult%" | FINDSTR /c:"*Administrators " > NUL 2>&1
 		IF %ERRORLEVEL% NEQ 0 (SET "userStatus=Not Elevated") ELSE (SET "userStatus=Elevated")
 EXIT /B 0
 REM -----------------------------------------------------------
