@@ -1,0 +1,8 @@
+[WSL DISTROS]
+Ubuntu-20.04 = |https://aka.ms/wslubuntu2004|
+Ubuntu-18.04 = |https://aka.ms/wsl-ubuntu-1804|
+Ubuntu-16.04 = |https://aka.ms/wsl-ubuntu-1604|
+Debian-Stable = |https://aka.ms/wsl-debian-gnulinux|
+Kali-Linux = |https://aka.ms/wsl-kali-linux-new|
+OpenSUSE-4.2 = |https://aka.ms/wsl-opensuse-42|
+SLES-12 = |https://aka.ms/wsl-sles-12|
