@@ -1,6 +1,6 @@
 [WSL DISTROS]
 
-Ubuntu-20.04-LTS = |https://apps.microsoft.com/store/detail/ubuntu-2004/9N6SVWS3RX71| -F = |Ubuntu2004.*_neutral_.*\.appxbundle|
+Ubuntu-20.04-LTS = |https://apps.microsoft.com/store/detail/ubuntu-2004/9N6SVWS3RX71| -F = |Ubuntu20\.04.*_neutral_.*\.appxbundle|
 Ubuntu-18.04-LTS = |https://apps.microsoft.com/store/detail/ubuntu-1804-lts/9N9TNGVNDL3Q| -F = |Ubuntu18\.04.*_neutral_.*\.appxbundle|
 Ubuntu = |https://aka.ms/wslubuntu2004| -S |894.52 MB| (Ubuntu 20.04)
 Ubuntu-18.04 = |https://aka.ms/wsl-ubuntu-1804| -S |221.09 MB|
