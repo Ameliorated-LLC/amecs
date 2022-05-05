@@ -1,26 +1,24 @@
 [WSL DISTROS]
 
-Ubuntu-20.04-LTS = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/9e127247-690c-441f-a9b6-95ec28d9104c?P1=1651702914&P2=404&P3=2&P4=VrUPendTK8XYgXkyb03y%2bW8Vp7SaIaL4K07%2bXmh5T1861yiI6zV1T0hmljvJ1wspGqBwZbXb0tSbUDlmfs78EA%3d%3d|
-Ubuntu-18.04-LTS = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/fcb8793e-86d9-4d56-adb3-55804353de7b?P1=1651694260&P2=404&P3=2&P4=BJ7jOAcxKl1o4a%2fgA3HapdIueIzlfDZI5lPx5Q5tLnirhP0l5ZMIB4uzRE3syG98TQ4gVTNAnCojNjzFKbdCrg%3d%3d|
-Ubuntu = |https://aka.ms/wslubuntu2004| (Ubuntu 20.04)
-Ubuntu-18.04 = |https://aka.ms/wsl-ubuntu-1804|
-Ubuntu-16.04 = |https://aka.ms/wsl-ubuntu-1604|
-Debian = |https://aka.ms/wsl-debian-gnulinux|
-Kali-Linux = |https://aka.ms/wsl-kali-linux-new|
-SLES-12 = |https://aka.ms/wsl-sles-12|
-SLES-15-SP2 = |https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP2|
-SLES-15-SP3 = |https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP3|
-Pengwin = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/535ae613-e3bf-4130-bb24-3db0e3f30588?P1=1651697746&P2=404&P3=2&P4=ATMHCdaLrBTTNTJ49WtIQgauU6hieNWcEMbxqFSJaRzbJCoOJk2JP3iZ2Bbr8m7kP%2f6XUCZBCoR2pxRlStw%2fTg%3d%3d|
-Pengwin-E7 = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/f5fc1bd8-c1e0-4d86-b293-38afd8165b0b?P1=1651689033&P2=404&P3=2&P4=YM8F%2bhr6nElbiCYfNOpi14XMctrKKERlL9APOnNRJbDrlG%2fKpEft1kZD9J2%2bCrV7LDIECW6o6hkxarAMOVFpNg%3d%3d|
-Alpine = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/bdcc5b34-bded-4b66-87af-5ed657f2858d?P1=1651684454&P2=404&P3=2&P4=gDbLvdQaT62HPfP4OcHXeZKNo1C2BI8sYVw1HfnwArUzM6XbEtN8M5WxoCMSlg7cQ1hieqEJ1kNdaHfx15eU%2fg%3d%3d|
-Raft-FT = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/d007af92-1aac-4a11-afdc-9e701dce424a?P1=1651686686&P2=404&P3=2&P4=jgQvvwWtJvY6wfVkkkhPBEoLF%2bTyzmv%2bAafPe4Jzfrym%2fgJVk7hFQmZhgzkqdCfpis4iSM0hX%2fO7s39FQsNDUQ%3d%3d|
-OpenSUSE-4.2 = |https://aka.ms/wsl-opensuse-42|
-OpenSUSE-Tumbleweed = |https://aka.ms/wsl-opensuse-tumbleweed|
-OpenSUSE-Leap-15.1 = |http://tlu.dl.delivery.mp.microsoft.com/filestreamingservice/files/acc7c94c-6fb1-4dc2-ae8a-36d0bf951d4a?P1=1651689640&P2=404&P3=2&P4=TKYMyY%2bZJ5EGP240mLgEmRhFrRSbeo63u2foYnqNmc%2bUeyPhX%2fyox2Y%2fGG6aPMzQ2D0Eo3WXFyZcTH6Dj0OjNQ%3d%3d|
-OpenSUSE-Leap-15.2 = |https://aka.ms/wsl-opensuseleap15-2|
-OpenSUSE-Leap-15.3 = |https://aka.ms/wsl-opensuseleap15-3|
-Oracle-Linux-7.9 = |https://aka.ms/wsl-oraclelinux-7-9|
-Oracle-Linux-8.5 = |https://aka.ms/wsl-oraclelinux-8-5|
-Fedora-Remix = |https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/35.12.3/Fedora-Remix-for-WSL-SL_35.12.3.0_x64_arm64.msixbundle|
-
-
+Ubuntu-20.04-LTS = |https://apps.microsoft.com/store/detail/ubuntu-2004/9N6SVWS3RX71| -F = |Ubuntu2004.*_neutral_.*\.appxbundle|
+Ubuntu-18.04-LTS = |https://apps.microsoft.com/store/detail/ubuntu-1804-lts/9N9TNGVNDL3Q| -F = |Ubuntu18\.04.*_neutral_.*\.appxbundle|
+Ubuntu = |https://aka.ms/wslubuntu2004| -S |894.52 MB| (Ubuntu 20.04)
+Ubuntu-18.04 = |https://aka.ms/wsl-ubuntu-1804| -S |221.09 MB|
+Ubuntu-16.04 = |https://aka.ms/wsl-ubuntu-1604| -S |199.08 MB|
+Debian = |https://aka.ms/wsl-debian-gnulinux| -S |167.07 MB|
+Kali-Linux = |https://aka.ms/wsl-kali-linux-new| -S |189.1 MB|
+Fedora-Remix = |https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/35.12.3/Fedora-Remix-for-WSL-SL_35.12.3.0_x64_arm64.msixbundle| -S |640.22 MB|
+Pengwin = |https://apps.microsoft.com/store/detail/pengwin/9NV1GV1PXZ6P| -F = |WhitewaterFoundryLtd.*1657.*_neutral_.*\.msixbundle|
+Pengwin-E7 = |https://apps.microsoft.com/store/detail/pengwin-enterprise-7/9N8LP0X93VCP| -F = |WhitewaterFoundryLtd.*WLinuxEnterprise.*_neutral_.*\.appxbundle|
+Raft-FT = |https://apps.microsoft.com/store/detail/raft-wsl/9MSMJQD017X7| -F = |WhitewaterFoundryLtd.*Raft-WSL.*_neutral_.*\.msixbundle|
+openSUSE-4.2 = |https://aka.ms/wsl-opensuse-42| -S |199.3 MB|
+openSUSE-Tumbleweed = |https://aka.ms/wsl-opensuse-tumbleweed| -S |183.03 MB|
+openSUSE-Leap-15.1 = |https://apps.microsoft.com/store/detail/opensuseleap151/9NJFZK00FGKV| -F = |openSUSE-Leap-15-1.*_x64_.*022rs.*\.appx|
+openSUSE-Leap-15.2 = |https://aka.ms/wsl-opensuseleap15-2| -S |141.11 MB|
+openSUSE-Leap-15.3 = |https://aka.ms/wsl-opensuseleap15-3| -S |174.81 MB|
+Oracle-Linux-7.9 = |https://aka.ms/wsl-oraclelinux-7-9| -S |125.47 MB|
+Oracle-Linux-8.5 = |https://aka.ms/wsl-oraclelinux-8-5| -S |109.42 MB|
+SLES-12 = |https://aka.ms/wsl-sles-12| -S |198.61 MB|
+SLES-15-SP2 = |https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP2| -S |159.16 MB|
+SLES-15-SP3 = |https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP3| -S |194.2 MB|
+Alpine = |https://apps.microsoft.com/store/detail/alpine-wsl/9P804CRF0395| -F = |AlpineWSL.*_neutral_.*my43b.*\.appxbundle|
