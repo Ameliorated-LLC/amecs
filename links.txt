@@ -10,7 +10,7 @@ Kali-Linux = |https://aka.ms/wsl-kali-linux-new| -S |189.1 MB|
 Fedora-Remix = |https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/35.12.3/Fedora-Remix-for-WSL-SL_35.12.3.0_x64_arm64.msixbundle| -S |640.22 MB|
 Pengwin = |https://apps.microsoft.com/store/detail/pengwin/9NV1GV1PXZ6P| -F = |WhitewaterFoundryLtd.*1657.*_neutral_.*\.msixbundle|
 Pengwin-E7 = |https://apps.microsoft.com/store/detail/pengwin-enterprise-7/9N8LP0X93VCP| -F = |WhitewaterFoundryLtd.*WLinuxEnterprise.*_neutral_.*\.appxbundle|
-Raft-FT = |https://apps.microsoft.com/store/detail/raft-wsl/9MSMJQD017X7| -F = |WhitewaterFoundryLtd.*Raft-WSL.*_neutral_.*\.msixbundle|
+Raft-FT = |https://apps.microsoft.com/store/detail/raft-wsl/9MSMJQD017X7| -F = |WhitewaterFoundry.*Raft-WSL.*_neutral_.*\.msixbundle|
 openSUSE-4.2 = |https://aka.ms/wsl-opensuse-42| -S |199.3 MB|
 openSUSE-Tumbleweed = |https://aka.ms/wsl-opensuse-tumbleweed| -S |183.03 MB|
 openSUSE-Leap-15.1 = |https://apps.microsoft.com/store/detail/opensuseleap151/9NJFZK00FGKV| -F = |openSUSE-Leap-15-1.*_x64_.*022rs.*\.appx|
