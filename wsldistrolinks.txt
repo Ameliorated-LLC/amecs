@@ -1,2 +1,0 @@
-Ubuntu 20.04 = |https://aka.ms/wslubuntu2004|
-Ubuntu 18.04 = |https://aka.ms/wsl-ubuntu-1804|
