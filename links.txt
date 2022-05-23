@@ -1,25 +1,29 @@
 [WSL DISTROS]
 
-Ubuntu = |https://akams/wslubuntu2004| -S |894.52 MB| -Alt |https://apps.microsoft.com/store/detail/ubuntu-2004/9N6SVWS3RX71| -AltF |Ubuntu20\.04.*_neutral_.*\.appxbundle| -AltDistro |Ubuntu-20.04|
-Ubuntu-18.04 = |https://akams/wsl-ubuntu-1804| -S |221.09 MB| -Alt |https://apps.microsoft.com/store/detail/ubuntu-1804-lts/9N9TNGVNDL3Q| -AltF |Ubuntu18\.04.*_neutral_.*\.appxbundle| -AltDistro |Ubuntu-18.04|
+Ubuntu = |https://aka.ms/wslubuntu2004| -S |894.52 MB| -Alt |https://apps.microsoft.com/store/detail/ubuntu-2004/9N6SVWS3RX71| -AltF |Ubuntu20\.04.*_neutral_.*\.appxbundle| -AltDistro |Ubuntu-20.04|
+Ubuntu-18.04 = |https://aka.ms/wsl-ubuntu-1804| -S |221.09 MB| -Alt |https://apps.microsoft.com/store/detail/ubuntu-1804-lts/9N9TNGVNDL3Q| -AltF |Ubuntu18\.04.*_neutral_.*\.appxbundle| -AltDistro |Ubuntu-18.04|
 Ubuntu-16.04 = |https://aka.ms/wsl-ubuntu-1604| -S |199.08 MB|
-Debian = |https://akams/wsl-debian-gnulinux| -S |167.07 MB| -Alt |https://apps.microsoft.com/store/detail/9MSVKQC78PK6| -AltF |DebianGNULinux.*_neutral_.*76v4g.*\.appxbundle| -AltDistro |Debian|
-kali-linux = |https://akams/wsl-kali-linux-new| -S |189.1 MB| -Alt |https://apps.microsoft.com/store/detail/kali-linux/9PKR34TNCV07| -AltF |KaliLinux.*_neutral_.*ey8k8.*\.appxbundle| -AltDistro |kali-linux|
+Debian = |https://aka.ms/wsl-debian-gnulinux| -S |167.07 MB| -Alt |https://apps.microsoft.com/store/detail/9MSVKQC78PK6| -AltF |DebianGNULinux.*_neutral_.*76v4g.*\.appxbundle| -AltDistro |Debian|
+kali-linux = |https://aka.ms/wsl-kali-linux-new| -S |189.1 MB| -Alt |https://apps.microsoft.com/store/detail/kali-linux/9PKR34TNCV07| -AltF |KaliLinux.*_neutral_.*ey8k8.*\.appxbundle| -AltDistro |kali-linux|
 fedoraremix = |https://github.com/WhitewaterFoundry/Fedora-Remix-for-WSL/releases/download/35.12.3/Fedora-Remix-for-WSL-SL_35.12.3.0_x64_arm64.msixbundle| -S |640.22 MB| -Alt |https://apps.microsoft.com/store/detail/9N6GDM4K2HNC| -AltF |WhitewaterFoundryLtd.*FedoraRemixforWSL.*_neutral_.*\.msixbundle| -AltDistro |fedoraremix|
 WLinux = |https://apps.microsoft.com/store/detail/pengwin/9NV1GV1PXZ6P| -F |WhitewaterFoundryLtd.*1657.*_neutral_.*\.msixbundle|
 WLE = |https://apps.microsoft.com/store/detail/pengwin-enterprise-7/9N8LP0X93VCP| -F |WhitewaterFoundryLtd.*WLinuxEnterprise.*_neutral_.*\.appxbundle|
 Alpine = |https://apps.microsoft.com/store/detail/alpine-wsl/9P804CRF0395| -F |AlpineWSL.*_neutral_.*my43b.*\.appxbundle|
 
-OracleLinux_7_9 = |https://aka.ms/wsl-oraclelinux-7-9| -S |125.47 MB|
-OracleLinux_8_5 = |https://aka.ms/wsl-oraclelinux-8-5| -S |109.42 MB|
 openSUSE-42 = |https://aka.ms/wsl-opensuse-42| -S |199.3 MB|
 openSUSE-Tumbleweed = |https://aka.ms/wsl-opensuse-tumbleweed| -S |183.03 MB|
 openSUSE-Leap-15-1 = |https://apps.microsoft.com/store/detail/opensuseleap151/9NJFZK00FGKV| -F |openSUSE-Leap-15-1.*_x64_.*022rs.*\.appx|
 openSUSE-Leap-15.2 = |https://aka.ms/wsl-opensuseleap15-2| -S |141.11 MB|
 openSUSE-Leap-15.3 = |https://aka.ms/wsl-opensuseleap15-3| -S |174.81 MB|
+OracleLinux_7_9 = |https://aka.ms/wsl-oraclelinux-7-9| -S |125.47 MB|
+OracleLinux_8_5 = |https://aka.ms/wsl-oraclelinux-8-5| -S |109.42 MB|
 SLES-12 = |https://aka.ms/wsl-sles-12| -S |198.61 MB|
 SUSE-Linux-Enterprise-Server-12-SP5 = |https://apps.microsoft.com/store/detail/suse-linux-enterprise-server-12-sp5/9MZ3D1TRP8T1| -F |SUSELinux.*_x64_.*022rs.*\.appx|
 
 SLES-15-SP1 = |https://apps.microsoft.com/store/detail/suse-linux-enterprise-server-15-sp1/9PN498VPMF3Z| -F |SUSELinux.*_x64_.*022rs.*\.appx|
 SUSE-Linux-Enterprise-Server-15-SP2 = |https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP2| -S |159.16 MB|
 SUSE-Linux-Enterprise-Server-15-SP3 = |https://aka.ms/wsl-SUSELinuxEnterpriseServer15SP3| -S |194.2 MB|
+
+[DRIVER GUIS]
+
+NVIDIA-Control-Panel = |https://apps.microsoft.com/store/detail/nvidia-control-panel/9NF8H0H7WMLT| -F |NVIDIACorp.*_x64_.*56jyb.*\.appx|
