@@ -1,4 +1,4 @@
-# Central AME Script
+# Central AME Script (amecs)
 
 Script for automating a large assortment of AME related actions.
 
