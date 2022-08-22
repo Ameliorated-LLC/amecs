@@ -188,7 +188,7 @@ IF NOT "%~1"=="-debug" (
 )
 COLOR 70
 TITLE Central AME Script
-SET "ver=v1.0"
+SET "ver=v1.1"
 IF "%~1"=="permsCheck" EXIT 0
 
 REM Allows for more flexibility with these two variables
@@ -216,7 +216,7 @@ FOR /F "usebackq tokens=1 delims= " %%A IN (`WMIC process where "name='cmd.exe' 
 		EXIT /B 0
 	)
 
-FOR /F "usebackq tokens=1 delims= " %%A IN (`WMIC useraccount where "name='%currentUsername%'" get sid 2^>^&1 ^| FINDSTR "S-"`) DO SET "userSID=%%A"
+FOR /F "usebackq tokens=1 delims= " %%A IN (`WMIC useraccount where "name='%currentUsername:'=\'%'" get sid 2^>^&1 ^| FINDSTR "S-"`) DO SET "userSID=%%A"
 
 IF /I NOT "%username%"=="%currentUsername%" (
 	CALL :AUX-GETUSERENV
@@ -251,7 +251,7 @@ GOTO HOME-MAINMENU
 
 IF /I "%~1"=="wslUnattend" SET "wslDistro=%~2" & SET "wslGroups=%~3" & SET "wslUnattendRun=true" & SET "adminPrivs=false" & GOTO WSL-DISTROINSTALL
 
-POWERSHELL -NoP -C "Start-Process '%scriptPath%' -Verb RunAs" > NUL 2>&1
+POWERSHELL -NoP -C "Start-Process '%scriptPath:'=''%' -Verb RunAs" > NUL 2>&1
 IF %ERRORLEVEL% GTR 0 (
 	IF "%altRun%"=="true" (
 		CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
@@ -435,7 +435,7 @@ IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
 			)
 	)
 )
-POWERSHELL -NoP -C "[console]::OutputEncoding = [Text.UnicodeEncoding]::Unicode; $WSLOut = WSL --help; $LastExitCode = 0; $WSLOut | FINDSTR /c:'--install'" > NUL 2>&1
+CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
 		SET "homeExtWSLMsg=""" -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red -NoNewLine; Write-Host """"
 		IF "%homeExtCh%"=="1234560X" (
@@ -669,7 +669,7 @@ IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
 	SET "homeNVCPMsg=Write-Host '                 [7] Uninstall NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red"
 )
 
-POWERSHELL -NoP -C "[console]::OutputEncoding = [Text.UnicodeEncoding]::Unicode; $WSLOut = WSL --help; $LastExitCode = 0; $WSLOut | FINDSTR /c:'--install'" > NUL 2>&1
+CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
 		SET "homeExtWSLMsg= -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red"
 		SET "homeExtCh=0X"
@@ -1014,8 +1014,12 @@ IF "%lpStatus%"=="removed" GOTO DISPLANG-LPREMOVE
 
 CALL :AUX-GENRND "7"
 
+REM Check if language pack is already installed
+DISM /Online /Get-Intl /English | FIND "Installed language(s): %langSel%" > NUL 2>&1
+	IF %ERRORLEVEL% LEQ 0 GOTO DISPLANG-USERCHECK
+
 SET "ZIPLoc=7z.exe"
-FOR /F "usebackq tokens=2* delims=\" %%A IN (`WHERE 7z.exe 2^>^&1`) DO IF EXIST "%SYSTEMDRIVE%%%A" SET "dispSkip0=rem "
+FOR /F "usebackq tokens=1,* delims=\" %%A IN (`WHERE 7z.exe 2^>^&1`) DO IF EXIST "%SYSTEMDRIVE%%%B" SET "dispSkip0=rem "
 	IF NOT "%dispSkip0%"=="rem " (
 		IF EXIST "%SYSTEMDRIVE%\Program Files\7-Zip\7z.exe" (
 			SET "ZIPLoc=%SYSTEMDRIVE%\Program Files\7-Zip\7z.exe"
@@ -1033,14 +1037,6 @@ WHERE choco.exe>NUL 2>&1 && SET "dispChoco=true"
 IF NOT "%dispChoco%"=="true" (
 	IF NOT "%dispSkip0%"=="rem " CALL :AUX-RETURN "7-Zip or Chocolatey must be installed." "HOME-LANGUAGE" -E
 )
-
-IF "%adminPrivs%"=="false" (
-	IF NOT "%dispSkip0%"=="rem " CALL :AUX-RETURN "Script must be run as the current user" "HOME-LANGUAGE" -L "or with administrator privilages" -E
-)
-
-REM Check if language pack is already installed
-DISM /Online /Get-Intl /English | FIND "Installed language(s): %langSel%" > NUL 2>&1
-	IF %ERRORLEVEL% LEQ 0 ECHO. & GOTO DISPLANG-USERCHECK
 
 TASKLIST /FI "IMAGENAME eq lpksetup.exe" 2>&1 | FINDSTR /c:"INFO: No tasks are running" > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 CALL :AUX-RETURN "All instances of lpksetup.exe must be closed." "HOME-LANGUAGE" -E
@@ -1083,7 +1079,7 @@ FOR %%A IN ("%dispISOLoc%\LangPacks%rndOut%.ISO") DO SET "langISOSize=%%~zA"
 :DISPLANG-INSTALL
 
 %dispSkip0%ECHO. & ECHO                                Installing 7zip... & choco install -y --force --allow-empty-checksums "7zip" > NUL
-POWERSHELL -NoP -C "Start-Process '%ZIPLoc%' -ArgumentList 'e','-y','-o""""%dispISOLoc%\LangPacks%rndOut%""""','""""%dispISOLoc%\LangPacks%rndOut%.ISO""""','x64\langpacks\*.cab' -NoNewWindow -Wait" > NUL 2>&1
+POWERSHELL -NoP -C "Start-Process '%ZIPLoc:'=''%' -ArgumentList 'e','-y','-o""""%dispISOLoc:'=''%\LangPacks%rndOut%""""','""""%dispISOLoc:'=''%\LangPacks%rndOut%.ISO""""','x64\langpacks\*.cab' -NoNewWindow -Wait" > NUL 2>&1
 DEL /Q /F "%dispISOLoc%\LangPacks%rndOut%.ISO" > NUL
 
 ECHO. & ECHO                 Installing language pack, this may take awhile...
@@ -1108,7 +1104,7 @@ LPKSETUP /i %langSel% /p "%dispISOLoc%\LangPacks%rndOut%\Microsoft-Windows-Clien
 :DISPLANG-USERCHECK
 
 IF /I "%~1"=="LangSet" SET "langSel=%~2" & SET "rndOut=%~3" & SET "makeKBDef=%~4" & GOTO DISPLANG-SETLANG
-POWERSHELL -NoP -C "Write-Host """`n           Make default keyboard language? (Y/N):""" -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+POWERSHELL -NoP -C "Write-Host """`n           Make default keyboard language? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 	IF %ERRORLEVEL%==2 SET "makeKBDef=false"
 
 IF "%altRun%"=="true" GOTO DISPLANG-ALT
@@ -1362,7 +1358,7 @@ IF /I "%~1"=="kbLangSet" SET "kbLangSel=%~2" & SET "rndOut=%~3" & SET "kbMakeDef
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
 
-POWERSHELL -NoP -C "Write-Host """`n           Make default keyboard language? (Y/N):""" -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+POWERSHELL -NoP -C "Write-Host """`n           Make default keyboard language? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 	IF %ERRORLEVEL%==2 SET "kbMakeDef=false"
 
 IF "%altRun%"=="true" GOTO :KBLANG-ALTADD
@@ -1500,7 +1496,7 @@ ECHO. & ECHO                               Enabling AutoLogon...
 
 CERTUTIL /f /decode "%scriptPath%" "%TEMP%\[amecs]-AutoLogon%rndOut%.exe" > NUL 2>&1
 
-POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		IF %ERRORLEVEL% EQU 7 CALL :AUX-RETURN "Failed to enable AutoLogon. (1)" -H -E -C
 		CALL :AUX-RETURN "Failed to enable AutoLogon. (2)" -H -E -C
@@ -1512,8 +1508,13 @@ REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlo
 			IF ERRORLEVEL 1 CALL :AUX-RETURN "Failed to enable AutoLogon. (3)" -H -E -C
 	)
 
-POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '%currentUsername%','""""%userPassword%""""','/DISABLECAD' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+IF NOT "%userPassword%"=="" (
+	POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '""""%currentUsername:'=''%""""','""""%userPassword:'=''%""""','/DISABLECAD' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+) ELSE (
+	POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '""""%currentUsername:'=''%""""','""""""','/DISABLECAD' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+)
 	IF %ERRORLEVEL% NEQ 0 (
+		POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow" > NUL 2>&1
 		IF %ERRORLEVEL% EQU 7 CALL :AUX-RETURN "Failed to enable AutoLogon. (4)" -H -E -C
 		CALL :AUX-RETURN "Failed to enable AutoLogon. (5)" -H -E -C
 	)
@@ -1521,9 +1522,9 @@ POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -
 REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /c:"%currentUsername%" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
 		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]1" > NUL 2>&1
-			IF ERRORLEVEL 1 CALL :AUX-RETURN "Failed to enable AutoLogon. (6)" -H -E -C
+			IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to enable AutoLogon. (6)" -H -E -C
 	) ELSE (
-		IF ERRORLEVEL 1 CALL :AUX-RETURN "Failed to enable AutoLogon. (7)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to enable AutoLogon. (7)" -H -E -C
 	)
 
 CALL :AUX-RETURN "Enabled AutoLogon successfully" -H -C
@@ -1540,7 +1541,7 @@ CALL :AUX-GENRND "7"
 
 CERTUTIL /f /decode "%scriptPath%" "%TEMP%\[amecs]-AutoLogon%rndOut%.exe" > NUL 2>&1
 
-POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		IF %ERRORLEVEL% EQU 7 CALL :AUX-RETURN "Failed to disable AutoLogon. (1)" -H -E -C
 		CALL :AUX-RETURN "Failed to disable AutoLogon. (2)" -H -E -C
@@ -1826,7 +1827,7 @@ ECHO. & ECHO                    Installing distro, this may take awhile...
 SET /A "count0=0"
 SET /A "count1=0"
 
-POWERSHELL -NoP -C "(Start-Process 'CMD' -ArgumentList '/K','POWERSHELL -NoP -C """"(Start-Process ''%wslExe%'' -NoNewWindow -PassThru).Id | Out-File -LiteralPath ''%TEMP%\[amecs]-DistroPID%rndOut%.txt'' -Encoding default""""' -WindowStyle Hidden -PassThru).Id" 1> "%TEMP%\[amecs]-DistroHostPID%rndOut%.txt"
+POWERSHELL -NoP -C "(Start-Process 'CMD' -ArgumentList '/K','POWERSHELL -NoP -C """"(Start-Process ''%wslExe:'=''''%'' -NoNewWindow -PassThru).Id | Out-File -LiteralPath ''%TEMP:'=''''%\[amecs]-DistroPID%rndOut%.txt'' -Encoding default""""' -WindowStyle Hidden -PassThru).Id" 1> "%TEMP%\[amecs]-DistroHostPID%rndOut%.txt"
 
 :WSL-DISTROPROGRESS
 
@@ -1877,13 +1878,13 @@ CALL :AUX-INPUTLOOP "wslRootPass" "Enter new root password" "0" "1" -Secure
 
 CALL :AUX-INPUTLOOP "wslUser" "Enter new UNIX username" "%inpLenOut%" "2"
 
-CALL :AUX-INPUTLOOP "wslUserPass" "Enter new UNIX password" "%inpLenOut%" "1" -Secure
+IF NOT "%wslUser%"==":None:" CALL :AUX-INPUTLOOP "wslUserPass" "Enter new UNIX password" "%inpLenOut%" "1" -Secure
 
-IF NOT "%wslRootPass%"=="None" SET "wslRootArg=echo -e """"%wslRootPass%\n%wslRootPass%"""" | passwd """"root"""" && "
+IF NOT "%wslRootPass%"==":None:" SET "wslRootArg=echo -e """"%wslRootPass%\n%wslRootPass%"""" | passwd """"root"""" && "
 
-IF NOT "%wslUser%"=="None" SET "wslUserArg=useradd -m -G %wslGroups% -s %wslLShell% """"%wslUser%"""" && echo -e """"\n[user]\ndefault=%wslUser%"""" >> """"/etc/wsl.conf"""" && "
+IF NOT "%wslUser%"==":None:" SET "wslUserArg=useradd -m -G %wslGroups% -s %wslLShell% """"%wslUser%"""" && echo -e """"\n[user]\ndefault=%wslUser%"""" >> """"/etc/wsl.conf"""" && "
 
-IF NOT "%wslUserPass%"=="None" SET "wslUserPassArg=echo -e """"%wslUserPass%\n%wslUserPass%"""" | passwd """"%wslUser%"""" && "
+IF NOT "%wslUserPass%"==":None:" SET "wslUserPassArg=echo -e """"%wslUserPass%\n%wslUserPass%"""" | passwd """"%wslUser%"""" && "
 
 POWERSHELL -NoP -C "Write-Host -NoNewLine '%wslRootArg%%sudo%%wslUserArg%%wslUserPassArg%echo """"Blank""""'" > "%TEMP%\[amecs]-WSLLin%rndOut%.txt" 2>&1
 
@@ -1957,8 +1958,10 @@ POWERSHELL -NoP -C "Write-Host """`n%cenOut%"""; Write-Host '                  Y
 CALL :AUX-INPUTLOOP "userPassword" "Enter your password, or enter 'Cancel' to exit" "3" "9" -Secure
 	IF %ERRORLEVEL% EQU 3 ENDLOCAL & GOTO HOME-MAINMENU
 
-POWERSHELL -NoP -C "$Pass = ConvertTo-SecureString -AsPlainText  -String '%userPassword%' -Force; $Creds = New-Object System.Management.Automation.PSCredential '%currentUsername%',$Pass; Start-Process '%scriptPath%' -Credential $Creds -ArgumentList 'permsCheck' -WindowStyle Hidden" > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 CALL :AUX-RETURN "User %currentUsername% must be able to read and execute to this script." "HOME-WSL" -E
+IF NOT "%userPassword%"=="" (
+	POWERSHELL -NoP -C "$Pass = ConvertTo-SecureString -AsPlainText -String '%userPassword:'=''%' -Force; $Creds = New-Object System.Management.Automation.PSCredential '%currentUsername:'=''%',$Pass; Start-Process '%scriptPath:'=''%' -Credential $Creds -ArgumentList 'permsCheck' -WindowStyle Hidden" > NUL 2>&1
+		IF ERRORLEVEL 1 CALL :AUX-RETURN "User %currentUsername% must be able to read and execute this script." "HOME-WSL" -E
+)
 
 IF %inpLenOut% GEQ 11 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & SET /A "inpLenOut=0"
 
@@ -1975,6 +1978,7 @@ DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | F
 )
 
 CALL :AUX-GENRND "7"
+IF NOT "%userPassword%"=="" SET "userPassword=%userPassword:'=''%"
 
 IF NOT "%autoLogon%"=="enabled" (
 	IF %inpLenOut% GEQ 11 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & SET /A "inpLenOut=0"
@@ -1984,11 +1988,15 @@ IF NOT "%autoLogon%"=="enabled" (
 
 	CERTUTIL /f /decode "%scriptPath%" "%TEMP%\[amecs]-AutoLogon%rndOut%.exe" > NUL 2>&1
 
-	POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -Wait -NoNewWindow" > NUL 2>&1
+	POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -Wait -NoNewWindow" > NUL 2>&1
 
-	POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '%currentUsername%','""""%userPassword%""""','1','/DISABLECAD' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+	IF NOT "%userPassword%"=="" (
+		POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '""""%currentUsername:'=''%""""','""""%userPassword:'=''%""""','1','/DISABLECAD' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+	) ELSE (
+		POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '""""%currentUsername:'=''%""""','""""""','1','/DISABLECAD' -Wait -NoNewWindow).ExitCode" > NUL 2>&1
+	)
 		IF ERRORLEVEL 1 (
-			POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow" > NUL 2>&1
+			POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow" > NUL 2>&1
 			IF ERRORLEVEL 7 CALL :AUX-RETURN "Failed to enable AutoLogon. (4)" -H -E -C
 			CALL :AUX-RETURN "Failed to enable AutoLogon. (5)" -H -E -C
 		)
@@ -1997,9 +2005,9 @@ IF NOT "%autoLogon%"=="enabled" (
 	REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /I /E /c:"    %currentUsername%" > NUL 2>&1
 		IF NOT ERRORLEVEL 1 (
 			REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]1" > NUL 2>&1
-				IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to enable AutoLogon. (6)" -H -E -C
+				IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to enable AutoLogon. (6)" -H -E -C
 		) ELSE (
-			IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to enable AutoLogon. (7)" -H -E -C
+			IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to enable AutoLogon. (7)" -H -E -C
 		)
 )
 
@@ -2009,22 +2017,22 @@ ECHO. & ECHO                    Creating task and restarting computer...
 
 IF "%userStatus%"=="Elevated" (
 	SCHTASKS /CREATE /TN "[amecs]-WSLUNATTENDSTART" /TR "CMD /C 'SCHTASKS /DELETE /TN '[amecs]-WSLUNATTENDSTART' /F>NUL&'%scriptPath%' wslUnattend '%wslDistro%' '%wslGroups%''" /SC ONLOGON /RL HIGHEST /RU "%currentUsername%" /F> NUL 2>&1 < NUL
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (1)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (1)" -H -E -C
 	POWERSHELL -NoP -C "$TaskSet = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; Set-ScheduledTask -TaskName '[amecs]-WSLUNATTENDSTART' -Settings $TaskSet" > NUL 2>&1
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (2)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (2)" -H -E -C
 ) ELSE (
 	EVENTCREATE /L APPLICATION /T INFORMATION /ID 10 /D "Set up event source." /SO "AMECS" > NUL 2>&1
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (1)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (1)" -H -E -C
 
 	SCHTASKS /CREATE /TN "[amecs]-WSLUNATTENDTASKDEL" /TR "CMD /C 'SCHTASKS /DELETE /TN '[amecs]-WSLUNATTENDSTART' /F & SCHTASKS /DELETE /TN '[amecs]-WSLUNATTENDTASKDEL' /F & POWERSHELL -NoP -C 'Remove-EventLog -Source ''''AMECS'''''" /sc ONEVENT /MO "*[System[Provider[@Name='AMECS'] and EventID=10]]" /EC Application /RL HIGHEST /RU "SYSTEM" /F> NUL 2>&1
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (2)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (2)" -H -E -C
 	POWERSHELL -NoP -C "$TaskSet = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; Set-ScheduledTask -TaskName '[amecs]-WSLUNATTENDTASKDEL' -Settings $TaskSet" > NUL 2>&1
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (3)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (3)" -H -E -C
 
 	SCHTASKS /CREATE /TN "[amecs]-WSLUNATTENDSTART" /TR "CMD /C 'EVENTCREATE /L APPLICATION /T INFORMATION /ID 10 /D TR /SO AMECS>NUL&'%scriptPath%' wslUnattend '%wslDistro%' '%wslGroups%''" /SC ONLOGON /RL HIGHEST /RU "%currentUsername%" /F > NUL 2>&1
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (4)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (4)" -H -E -C
 	POWERSHELL -NoP -C "$TaskSet = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; Set-ScheduledTask -TaskName '[amecs]-WSLUNATTENDSTART' -Settings $TaskSet" > NUL 2>&1
-		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (5)" -H -E -C
+		IF ERRORLEVEL 1 POWERSHELL -NoP -C "Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.exe' -ArgumentList '/DEL' -NoNewWindow">NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDSTART" /F>NUL 2>&1 & SCHTASKS /DELETE /TN "[amecs]-WSLUNATTENDTASKDEL" /F>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (5)" -H -E -C
 )
 
 DEL /Q /F "%TEMP%\[amecs]*%rndOut%.*" > NUL 2>&1
@@ -2191,13 +2199,18 @@ IF %inpLenOut% GEQ 9 CLS & ECHO. & ECHO            _____________________________
 
 ECHO. & ECHO                              Configuring new user...
 
-SCHTASKS /create /tn "[amecs]-NEWUSERREG" /tr "CMD /C 'FOR /F 'usebackq delims=' %%A IN (`REG QUERY 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\InboxApplications'`) DO REG DELETE '%%A' /f'" /sc MONTHLY /f /rl HIGHEST /ru "SYSTEM" > NUL
-	IF %ERRORLEVEL% NEQ 0 SCHTASKS /DELETE /TN "[amecs]-NEWUSERREG" /F>NUL 2>&1 & NET user "%newUsername%" /delete /y>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (1)" -H -E
-POWERSHELL -NoP -C "$TaskSet = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; Set-ScheduledTask -TaskName '[amecs]-NEWUSERREG' -Settings $TaskSet" > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 SCHTASKS /DELETE /TN "[amecs]-NEWUSERREG" /F>NUL 2>&1 & NET user "%newUsername%" /delete /y>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (2)" -H -E
+REM SCHTASKS /create /tn "[amecs]-NEWUSERREG" /tr "CMD /C 'FOR /F 'usebackq delims=' %%A IN (`REG QUERY HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\InboxApplications^^&REG QUERY HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Config`) DO REG DELETE '%%A' /f'" /sc MONTHLY /f /rl HIGHEST /ru "SYSTEM" > NUL
+	REM IF %ERRORLEVEL% NEQ 0 SCHTASKS /DELETE /TN "[amecs]-NEWUSERREG" /F>NUL 2>&1 & NET user "%newUsername%" /delete /y>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (1)" -H -E
+REM POWERSHELL -NoP -C "$TaskSet = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; Set-ScheduledTask -TaskName '[amecs]-NEWUSERREG' -Settings $TaskSet" > NUL 2>&1
+	REM IF %ERRORLEVEL% NEQ 0 SCHTASKS /DELETE /TN "[amecs]-NEWUSERREG" /F>NUL 2>&1 & NET user "%newUsername%" /delete /y>NUL 2>&1 & CALL :AUX-RETURN "Failed to create scheduled task. (2)" -H -E
 
-SCHTASKS /run /tn "[amecs]-NEWUSERREG" > NUL
-SCHTASKS /delete /tn "[amecs]-NEWUSERREG" /f > NUL
+REM SCHTASKS /run /tn "[amecs]-NEWUSERREG" > NUL
+REM SCHTASKS /delete /tn "[amecs]-NEWUSERREG" /f > NUL
+
+FOR /F "usebackq tokens=3 delims= " %%A IN (`SC queryex "AppReadiness" 2^>^&1 ^| FINDSTR /R /X /c:"[ ]*PID[ ]*:[ ].*"`) DO (
+	IF NOT "%%A"=="0" TASKKILL /PID "%%A" /F > NUL 2>&1
+	SC delete "AppReadiness" > NUL 2>&1
+)
 
 REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE" /v DisablePrivacyExperience /t REG_DWORD /d 1 /f > NUL 2>&1
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableFirstLogonAnimation /t REG_DWORD /d 0 /f > NUL 2>&1
@@ -2239,7 +2252,7 @@ REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\E
 REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\AdvertisingInfo" /v Enabled /t REG_DWORD /d 0 /f > NUL 2>&1
 REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\AppHost" /v EnableWebContentEvaluation /t REG_DWORD /d 0 /f > NUL 2>&1
 REG ADD "HKEY_USERS\DefaultHiveMount\Control Panel\International\User Profile" /v HttpAcceptLanguageOptOut /t REG_DWORD /d 1 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f > NUL 2>&1
 REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" /v AppCaptureEnabled /t REG_DWORD /d 0 /f > NUL 2>&1
 REG ADD "HKEY_USERS\DefaultHiveMount\System\GameConfigStore" /v GameDVR_Enabled /t REG_DWORD /d 0 /f > NUL 2>&1
 
@@ -2251,19 +2264,19 @@ REG ADD "HKEY_USERS\DefaultHiveMount\Control Panel\Desktop" /v WaitToKillAppTime
 
 REG DELETE "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense" /f > NUL 2>&1
 
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\Search" /v "CortanaConsent" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\Search" /v "CortanaInAmbientMode" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\Search" /v "HistoryViewEnabled" /t REG_DWORD 0 /f  > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\Search" /v "HasAboveLockTips" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\Search" /v "AllowSearchToUseLocation" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Windows\CurrentVersion\SearchSettings" /v "SafeSearchMode" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Policies\Microsoft\Windows\Explorer" /v "DisableSearchBoxSuggestions" /t REG_DWORD /d 1 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\InputPersonalization\TrainedDataStore" /v "AcceptedPrivacyPolicy" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\InputPersonalization\TrainedDataStore" /v "HarvestContacts" /t REG_DWORD /d 0 /f > NUL 2>&1
-REG ADD "HKEY_USERS\DefaultHiveMount\Software\Microsoft\Personalization\Settings" /v "AcceptedPrivacyPolicy" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "CortanaConsent" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "CortanaInAmbientMode" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "HistoryViewEnabled" /t REG_DWORD 0 /f  > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "HasAboveLockTips" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" /v "AllowSearchToUseLocation" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings" /v "SafeSearchMode" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "DisableSearchBoxSuggestions" /t REG_DWORD /d 1 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" /v "AcceptedPrivacyPolicy" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\InputPersonalization\TrainedDataStore" /v "HarvestContacts" /t REG_DWORD /d 0 /f > NUL 2>&1
+REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Microsoft\Personalization\Settings" /v "AcceptedPrivacyPolicy" /t REG_DWORD /d 0 /f > NUL 2>&1
 
 REG ADD "HKEY_USERS\DefaultHiveMount\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "DisableSearchBoxSuggestions" /t REG_DWORD /d 1 /f > NUL 2>&1
 
@@ -2511,7 +2524,7 @@ IF /I "%~3"=="-R" (
 IF "%wslUnattendRun%"=="true" (
 	SET "wslUnattendRun=false"
 	IF "%adminPrivs%"=="false" (
-		POWERSHELL -NoP -C "Start-Process '%scriptPath%' -Verb RunAs" > NUL 2>&1
+		POWERSHELL -NoP -C "Start-Process '%scriptPath:'=''%' -Verb RunAs" > NUL 2>&1
 			IF ERRORLEVEL 1 (
 				CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
 				POWERSHELL -NoP -C "Write-Host """`n`n`n               Elevation canceled, run with limited functionality?`n                                    [Y]   [N]`n           __________________________________________________________`n`n           Choose an option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
@@ -2565,7 +2578,7 @@ REM -----------------------------------------------------------
 
 REM Grabs current username. %username% can be problematic and %userprofile%
 REM is hard to filter properly, thus why this method is used.
-FOR /F "tokens=2* delims=\" %%B IN ('WMIC computersystem get username') DO SET "currentUsername=%%B"
+FOR /F "usebackq tokens=1,* delims=\" %%A IN (`WMIC computersystem get username ^| FINDSTR /c:"\\"`) DO SET "currentUsername=%%B"
 	SET "currentUsername=%currentUsername:~0,-3%"
 	REM Detection for if user changed their username without restarting
 	IF "%currentUsername%"=="~0,-3" SET "currentUsername=RestartRequired"
@@ -2578,10 +2591,10 @@ REM -----------------------------------------------------------
 REM -----------------------------------------------------------
 :AUX-GETUSERENV
 
-FOR /F "usebackq tokens=3* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Volatile Environment" /v "APPDATA" 2^>^&1 ^| FINDSTR /R /X /C:".*APPDATA[ ]*REG_SZ[ ].*"`) DO SET "userAppData=%%A"
-FOR /F "usebackq tokens=3* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Volatile Environment" /v "LOCALAPPDATA" 2^>^&1 ^| FINDSTR /R /X /C:".*LOCALAPPDATA[ ]*REG_SZ[ ].*"`) DO SET "userLocalAppData=%%A"
-FOR /F "usebackq tokens=3* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Environment" /v "TEMP" 2^>^&1 ^| FINDSTR /R /X /C:".*TEMP[ ]*REG_EXPAND_SZ[ ].*"`) DO SET "userTemp=%%A"
-FOR /F "usebackq tokens=3* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Volatile Environment" /v "USERPROFILE" 2^>^&1 ^| FINDSTR /R /X /C:".*USERPROFILE[ ]*REG_SZ[ ].*"`) DO SET "userUserProfile=%%A"
+FOR /F "usebackq tokens=2,* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Volatile Environment" /v "APPDATA" 2^>^&1 ^| FINDSTR /R /X /C:".*APPDATA[ ]*REG_SZ[ ].*"`) DO SET "userAppData=%%B"
+FOR /F "usebackq tokens=2,* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Volatile Environment" /v "LOCALAPPDATA" 2^>^&1 ^| FINDSTR /R /X /C:".*LOCALAPPDATA[ ]*REG_SZ[ ].*"`) DO SET "userLocalAppData=%%B"
+FOR /F "usebackq tokens=2,* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Environment" /v "TEMP" 2^>^&1 ^| FINDSTR /R /X /C:".*TEMP[ ]*REG_EXPAND_SZ[ ].*"`) DO SET "userTemp=%%B"
+FOR /F "usebackq tokens=2,* delims= " %%A IN (`REG QUERY "HKU\%userSID%\Volatile Environment" /v "USERPROFILE" 2^>^&1 ^| FINDSTR /R /X /C:".*USERPROFILE[ ]*REG_SZ[ ].*"`) DO SET "userUserProfile=%%B"
 
 SET "userUserProfileTmp=%userUserProfile:!=:AINV:%"
 SETLOCAL ENABLEDELAYEDEXPANSION
@@ -2634,7 +2647,7 @@ REM -----------------------------------------------------------
 REM -----------------------------------------------------------
 :AUX-BACKLINE
 
-POWERSHELL -NoP -C "$posY = $host.UI.RawUI.CursorPosition.Y; $origPosY = $posY - 1; [Console]::SetCursorPosition(%~1,$origPosY); Write-Host """None`r""""
+POWERSHELL -NoP -C "$posY = $host.UI.RawUI.CursorPosition.Y; $origPosY = $posY - 1; [Console]::SetCursorPosition(%~1,$origPosY); Write-Host """None`r""" -ForegroundColor DarkGray"
 EXIT /B 0
 REM -----------------------------------------------------------
 
@@ -2705,7 +2718,7 @@ IF %count% GEQ 11 (
 
 CALL :FILTERCALL-%filter%
 	IF %ERRORLEVEL% EQU 5 (
-		ENDLOCAL & SET "inpLenOut=%count%" & SET "inpTextOut=%input%" & SET "%varSet%=None" & EXIT /B 5
+		ENDLOCAL & SET "inpLenOut=%count%" & SET "inpTextOut=%input%" & SET "%varSet%=:None:" & EXIT /B 5
 	)
 	IF %ERRORLEVEL% EQU 3 (
 		ENDLOCAL & EXIT /B 3
@@ -3058,7 +3071,7 @@ REM -----------------------------------------------------------
 :FILTERCALL-1
 REM WSL password filter
 
-IF "%tmpVar%"=="" CALL :AUX-BACKLINE "36" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: None':QUOTE:" && EXIT /B 5
+IF "%tmpVar%"=="" CALL :AUX-BACKLINE "36" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ' -NoNewLine; Write-Host 'None' -ForegroundColor DarkGray:QUOTE:" && EXIT /B 5
 CALL :AUX-LENGTHFETCH "%tmpVar%" -Mask
 CALL SET "tmpVarIn=%%lenAstOut:~0,%inSpace%%%%tmpVarDec%"
 SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt%: %tmpVarIn:'=''%':QUOTE:"
@@ -3070,7 +3083,7 @@ EXIT /B 0
 :FILTERCALL-2
 REM WSL username filter
 
-IF "%tmpVar%"=="" CALL :AUX-BACKLINE "36" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: None':QUOTE:" && EXIT /B 5
+IF "%tmpVar%"=="" CALL :AUX-BACKLINE "36" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ' -NoNewLine; Write-Host 'None' -ForegroundColor DarkGray:QUOTE:" && EXIT /B 5
 CALL SET "tmpVarIn=%%tmpVar:~0,%inSpace%%%%tmpVarDec%"
 SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: %tmpVarIn:'=''%':QUOTE:"
 
@@ -3089,7 +3102,7 @@ EXIT /B 0
 :FILTERCALL-3
 REM WSL ALTRUN username filter
 
-IF "%tmpVar%"=="" CALL :AUX-BACKLINE "36" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: None':QUOTE:" && EXIT /B 5
+IF "%tmpVar%"=="" CALL :AUX-BACKLINE "36" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ' -NoNewLine; Write-Host 'None' -ForegroundColor DarkGray:QUOTE:" && EXIT /B 5
 CALL SET "tmpVarIn=%%tmpVar:~0,%inSpace%%%%tmpVarDec%"
 SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: %tmpVarIn:'=''%':QUOTE:"
 
@@ -3114,7 +3127,14 @@ EXIT /B 0
 :FILTERCALL-4
 REM Windows password change filter
 
-IF "%tmpVar%"=="" SET "relayMsg= & ECHO            Input cannot be blank." && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ':QUOTE:" && EXIT /B 1
+IF "%tmpVar%"=="" (
+	CALL :AUX-BACKLINE "52"
+	SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ':QUOTE:"
+	NET user "%C4Username%" "%tmpVar%" /y > NUL 2>&1
+		IF ERRORLEVEL 1 SET "relayMsg= & ECHO            Failed to change user password." && EXIT /B 1
+	EXIT /B 0
+)
+
 CALL :AUX-LENGTHFETCH "%tmpVar%" -Mask
 CALL SET "tmpVarIn=%%lenAstOut:~0,%inSpace%%%%tmpVarDec%"
 SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: %tmpVarIn:'=''%':QUOTE:"
@@ -3137,7 +3157,7 @@ IF /I "%tmpVar%"=="Cancel" EXIT /B 3
 ECHO "%tmpVar%" | FINDSTR /c:":AINV:">NUL 2>&1 && SET "relayMsg= & ECHO            Input cannot contain double quotes." && EXIT /B 1
 
 TIMEOUT /T 1 /NOBREAK > NUL
-FOR /F "usebackq tokens=3" %%A IN (`WMIC useraccount where "name='%currentUsername%'" rename "%tmpVar%"  2^>^&1 ^| FINDSTR /c:"0;" /c:"Available." /c:"9;"`) DO SET "wmicOutput=%%A" > NUL 2>&1
+FOR /F "usebackq tokens=3" %%A IN (`WMIC useraccount where "name='%currentUsername:'=\'%'" rename "%tmpVar%"  2^>^&1 ^| FINDSTR /c:"0;" /c:"Available." /c:"9;"`) DO SET "wmicOutput=%%A" > NUL 2>&1
 	IF "%wmicOutput%"=="0;" EXIT /B 0
 	REM This should only happen if the user changes their username AND closes/re-opens the .cmd before restarting.
 	IF "%wmicOutput%"=="Available." SET "relayMsg= & ECHO            You must restart before changing your username again." && EXIT /B 1
@@ -3149,7 +3169,7 @@ EXIT /B 1
 :FILTERCALL-6
 REM Windows password filter backline
 
-IF /I "%tmpVar%"=="" CALL :AUX-BACKLINE "51" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: None:QUOTE:" && EXIT /B 0
+IF /I "%tmpVar%"=="" CALL :AUX-BACKLINE "52" && SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ' -NoNewLine; Write-Host 'None' -ForegroundColor DarkGray:QUOTE:" && EXIT /B 0
 CALL :AUX-LENGTHFETCH "%tmpVar%" -Mask
 CALL SET "tmpVarIn=%%lenAstOut:~0,%inSpace%%%%tmpVarDec%"
 SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: %tmpVarIn:'=''%':QUOTE:"
@@ -3196,25 +3216,30 @@ EXIT /B 0
 :FILTERCALL-9
 REM User password filter
 
+IF "%tmpVar%"=="" (
+	CALL :AUX-BACKLINE "59"
+	SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: ' -NoNewLine; Write-Host 'None' -ForegroundColor DarkGray:QUOTE:"
+	SCHTASKS /CREATE /TN "[amecs]-USERPASSCHECK" /TR "CMD /C 'SCHTASKS /DELETE /TN '[amecs]-USERPASSCHECK' /F'" /SC ONSTART /RU "%currentUsername%" /RP "" /F<NUL 2>&1 | FINDSTR /c:"blank passwords aren't allowed" > NUL 2>&1
+		IF ERRORLEVEL 1 (
+			SCHTASKS /DELETE /TN '[amecs]-USERPASSCHECK' /F > NUL 2>&1
+			SET "relayMsg= & ECHO            Password is invalid." & EXIT /B 1
+		)
+	EXIT /B 0
+)
+
 CALL :AUX-LENGTHFETCH "%tmpVar%" -Mask
 CALL SET "tmpVarIn=%%lenAstOut:~0,%inSpace%%%%tmpVarDec%"
 SET "input= & POWERSHELL -NoP -C :QUOTE:Write-Host '           %prompt:'=''%: %tmpVarIn:'=''%':QUOTE:"
 IF /I "%tmpVar%"=="Cancel" EXIT /B 3
 ECHO "%tmpVar%" | FINDSTR /c:":AINV:">NUL 2>&1 && SET "relayMsg= & ECHO            Input cannot contain double quotes." && EXIT /B 1
 
-IF "%tmpVar%"=="" (
-	SCHTASKS /CREATE /TN "[amecs]-USERPASSCHECK" /TR "CMD /C 'SCHTASKS /DELETE /TN '[amecs]-USERPASSCHECK' /F'" /SC ONSTART /RU "%currentUsername%" /RP "" /F<NUL 2>&1 | FINDSTR /c:"blank passwords aren't allowed" > NUL 2>&1
-		IF ERRORLEVEL 1 (
-			SCHTASKS /DELETE /TN '[amecs]-USERPASSCHECK' /F > NUL 2>&1
-			SET "relayMsg= & ECHO            Password is invalid." & EXIT /B 1
+
+SCHTASKS /CREATE /TN "[amecs]-USERPASSCHECK" /TR "CMD /C 'SCHTASKS /DELETE /TN '[amecs]-USERPASSCHECK' /F'" /SC ONSTART /RU "%currentUsername%" /RP "%tmpVar%" /F<NUL > NUL 2>&1
+	IF %ERRORLEVEL% NEQ 0 (
+		SCHTASKS /DELETE /TN "[amecs]-USERPASSCHECK" /F > NUL 2>&1
+		SET "relayMsg= & ECHO            Password is invalid." & EXIT /B 1
 	)
-) ELSE (
-	SCHTASKS /CREATE /TN "[amecs]-USERPASSCHECK" /TR "CMD /C 'SCHTASKS /DELETE /TN '[amecs]-USERPASSCHECK' /F'" /SC ONSTART /RU "%currentUsername%" /RP "%tmpVar%" /F<NUL > NUL 2>&1
-		IF ERRORLEVEL 1 (
-			SCHTASKS /DELETE /TN "[amecs]-USERPASSCHECK" /F > NUL 2>&1
-			SET "relayMsg= & ECHO            Password is invalid." & EXIT /B 1
-		)
-)
+
 
 SCHTASKS /DELETE /TN "[amecs]-USERPASSCHECK" /F > NUL 2>&1
 EXIT /B 0
@@ -3232,8 +3257,6 @@ REM -----------------------------------------------------------
 SETLOCAL
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
-
-IF "%adminPrivs%"=="false"  CALL :AUX-RETURN "Script must be run as the current user" "HOME-WSL" -L "or with administrator privilages." -E
 
 IF "%wslUnattend%"=="true" GOTO :WSL-DISTROUNATTEND
 
@@ -3395,13 +3418,13 @@ CALL :AUX-INPUTLOOP "wslRootPass" "Enter new root password" "0" "1" -Secure
 
 CALL :AUX-INPUTLOOP "wslUser" "Enter new UNIX username" "%inpLenOut%" "3"
 
-CALL :AUX-INPUTLOOP "wslUserPass" "Enter new UNIX password" "%inpLenOut%" "1" -Secure
+IF NOT "%wslUser%"==":None:" CALL :AUX-INPUTLOOP "wslUserPass" "Enter new UNIX password" "%inpLenOut%" "1" -Secure
 
-IF NOT "%wslRootPass%"=="None" SET "wslRootArg=echo -e """"%wslRootPass%\n%wslRootPass%"""" | passwd """"root"""" && "
+IF NOT "%wslRootPass%"==":None:" SET "wslRootArg=echo -e """"%wslRootPass%\n%wslRootPass%"""" | passwd """"root"""" && "
 
-IF NOT "%wslUser%"=="None" SET "wslUserArg=useradd -m -G %wslGroups% -s %wslLShell% """"%wslUser%"""" && echo -e """"\n[user]\ndefault=%wslUser%"""" >> """"/etc/wsl.conf"""" && "
+IF NOT "%wslUser%"==":None:" SET "wslUserArg=useradd -m -G %wslGroups% -s %wslLShell% """"%wslUser%"""" && echo -e """"\n[user]\ndefault=%wslUser%"""" >> """"/etc/wsl.conf"""" && "
 
-IF NOT "%wslUserPass%"=="None" SET "wslUserPassArg=echo -e """"%wslUserPass%\n%wslUserPass%"""" | passwd """"%wslUser%"""" && "
+IF NOT "%wslUserPass%"==":None:" SET "wslUserPassArg=echo -e """"%wslUserPass%\n%wslUserPass%"""" | passwd """"%wslUser%"""" && "
 
 POWERSHELL -NoP -C "Write-Host -NoNewLine '%wslRootArg%%sudo%%wslUserArg%%wslUserPassArg%echo """"Blank""""'" > "%userTemp%\[amecs]-WSLLin%rndOut%.txt" 2>&1
 
@@ -3454,7 +3477,7 @@ CALL :AUX-WAITLOOP "-C:Distro: |" "%TEMP%\[amecs]-WSLCom%rndOut%.txt"
 	)
 REM :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-POWERSHELL -NoP -C "(Start-Process 'CMD' -ArgumentList '/K','POWERSHELL -NoP -C """"(Start-Process ''%wslExe%'' -NoNewWindow -PassThru).Id | Out-File -LiteralPath ''%TEMP%\[amecs]-DistroPID%rndOut%.txt'' -Encoding default""""' -WindowStyle Hidden -PassThru).Id" 1> "%TEMP%\[amecs]-DistroHostPID%rndOut%.txt"
+POWERSHELL -NoP -C "(Start-Process 'CMD' -ArgumentList '/K','POWERSHELL -NoP -C """"(Start-Process ''%wslExe:'=''''%'' -NoNewWindow -PassThru).Id | Out-File -LiteralPath ''%TEMP:'=''''%\[amecs]-DistroPID%rndOut%.txt'' -Encoding default""""' -WindowStyle Hidden -PassThru).Id" 1> "%TEMP%\[amecs]-DistroHostPID%rndOut%.txt"
 
 :ALTCHILD-WSL-DISTROPROGRESS
 
@@ -3517,8 +3540,6 @@ REM -----------------------------------------------------------
 :ALTPARENT-WSL-DISTROREMOVE
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
-
-IF "%adminPrivs%"=="false" CALL :AUX-RETURN "Script must be run as the current user" "HOME-WSL" -L "or with administrator privilages." -E
 
 ECHO. & ECHO                           Checking installed distros...
 CALL :AUX-ALTSTART "WSLDistroRemove" "CMD /C 'START /min '' POWERSHELL -NoP -C 'Start-Process ''''|Script|'''' -ArgumentList ''''wslRemove'''',''''|rndOut|'''' -WindowStyle Hidden'"
