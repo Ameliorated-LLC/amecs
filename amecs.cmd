@@ -188,7 +188,7 @@ IF NOT "%~1"=="-debug" (
 )
 COLOR 70
 TITLE Central AME Script
-SET "ver=v1.1"
+SET "ver=v1.2"
 IF "%~1"=="permsCheck" EXIT 0
 
 REM Allows for more flexibility with these two variables
@@ -264,8 +264,8 @@ IF %ERRORLEVEL% GTR 0 (
 			EXIT /B 0
 		) ELSE (
 			SET "adminPrivs=false"
-			TASKLIST /FI "WINDOWTITLE eq Central AME Script" /FI "PID ne %scriptPID%" 2>&1 | FINDSTR /i /c:"ERROR:" /c:"INFO: No tasks are running">NUL 2>&1 && TASKLIST /FI "WINDOWTITLE eq Administrator:  Central AME Script" /FI "PID ne %scriptPID%" 2>&1 | FINDSTR /i /c:"ERROR:" /c:"INFO: No tasks are running" > NUL 2>&1
-				IF NOT ERRORLEVEL 1 DEL /Q /F "%TEMP%\[amecs]*" > NUL 2>&1
+			TASKLIST /FI "WINDOWTITLE eq Central AME Script" /FI "PID ne %scriptPID%" 2>&1 | FINDSTR /i /c:".exe">NUL 2>&1 || TASKLIST /FI "WINDOWTITLE eq Administrator:  Central AME Script" /FI "PID ne %scriptPID%" 2>&1 | FINDSTR /i /c:".exe" > NUL 2>&1
+				IF ERRORLEVEL 1 DEL /Q /F "%TEMP%\[amecs]*" > NUL 2>&1
 			GOTO HOME-MAINMENU
 		)
 )
@@ -286,50 +286,9 @@ IF "%adminPrivs%"=="false" GOTO HOME-LIMMAINMENU
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-CALL :AUX-ELEVATIONCHECK
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeElevMsg=De-elevate User"
-		SET "homeElevLoc=ELEVATE-REVOKE"
-	) ELSE (
-		SET "homeElevMsg=Elevate User to Administrator"
-		SET "homeElevLoc=ELEVATE-ELEVATE"
-	)
-
-REG QUERY "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername 2>&1 | FINDSTR /R /X /C:".*dontdisplaylastusername[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeNUMsg=Disable Username Login Requirement"
-		SET "homeNULoc=NOUSERNAME-DISABLE"
-	) ELSE (
-		SET "homeNUMsg=Enable Username Login Requirement"
-		SET "homeNULoc=NOUSERNAME-ENABLE"
-	)
-
-
-REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /c:"%currentUsername%" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]0" > NUL 2>&1
-			IF ERRORLEVEL 1 (
-				SET "homeALMsg=Disable AutoLogon"
-				SET "homeALLoc=AUTOLOGON-DISABLE"
-			) ELSE (
-				SET "homeALMsg=Enable AutoLogon"
-				SET "homeALLoc=AUTOLOGON-ENABLE"
-			)
-	) ELSE (
-		SET "homeALMsg=Enable AutoLogon"
-		SET "homeALLoc=AUTOLOGON-ENABLE"
-	)
-
-POWERSHELL -NoP -C "Write-Host """                 [1] Change Username or Password`n                 [2] Change Lockscreen Image`n                 [3] Change Profile Image`n                 [4] Manage Language Settings`n                 [5] %homeElevMsg%`n                 [6] %homeNUMsg%`n                 [7] %homeALMsg%`n`n                 [E] Extra`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C 1234567EX /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-		IF %ERRORLEVEL%==1 GOTO USERPASS-MENU
-		IF %ERRORLEVEL%==2 GOTO LOCKSCREEN-GRABIMAGE
-		IF %ERRORLEVEL%==3 GOTO PFP-GRABIMAGE
-		IF %ERRORLEVEL%==4 GOTO HOME-LANGUAGE
-		IF %ERRORLEVEL%==5 GOTO %homeElevLoc%
-		IF %ERRORLEVEL%==6 GOTO %homeNULoc%
-		IF %ERRORLEVEL%==7 GOTO %homeALLoc%
-		IF %ERRORLEVEL%==8 GOTO HOME-EXTRA
-		IF %ERRORLEVEL%==9 EXIT /B 0
+CALL :MO-CHOICE -InitChoices "1234567EX" "+GOTO USERPASS-MENU+GOTO LOCKSCREEN-GRABIMAGE+GOTO PFP-GRABIMAGE+GOTO HOME-LANGUAGE+GOTO !homeElevLoc!+GOTO !homeNULoc!+GOTO !homeALLoc!+GOTO HOME-EXTRA+EXIT /B 0+"
+CALL :MO-MAINMENU
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Change Username or Password`n$(' '.padleft(17, ' '))[2] Change Lockscreen Image`n$(' '.padleft(17, ' '))[3] Change Profile Image`n$(' '.padleft(17, ' '))[4] Manage Language Settings`n$(' '.padleft(17, ' '))[5] %homeElevMsg%`n$(' '.padleft(17, ' '))[6] %homeNUMsg%`n$(' '.padleft(17, ' '))[7] %homeALMsg%`n`n$(' '.padleft(17, ' '))[E] Extra`n$(' '.padleft(17, ' '))[X] Exit`n"
 
 :HOME-EXTRA
 
@@ -337,172 +296,9 @@ IF "%adminPrivs%"=="false" GOTO HOME-LIMEXTRA
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled 2>&1 | FINDSTR /R /X /C:".*HibernateEnabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HiberFileType 2>&1 | FINDSTR /R /X /C:".*HiberFileType[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-			IF NOT ERRORLEVEL 1 (
-				SET "homeHIBMsg=Disable Hibernation"
-				SET "homeHIBLoc=HIBERNATE-DISABLE"
-			) ELSE (
-				SET "homeHIBMsg=Enable Hibernation"
-				SET "homeHIBLoc=HIBERNATE-ENABLE"
-			)
-	) ELSE (
-		SET "homeHIBMsg=Enable Hibernation"
-		SET "homeHIBLoc=HIBERNATE-ENABLE"
-	)
-
-REG QUERY "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-			IF ERRORLEVEL 1 (
-				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy^)"
-				SET "homeWSHLoc=WSH-ENABLE"
-			) ELSE (
-				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy^)"
-				SET "homeWSHLoc=WSH-DISABLE"
-
-			)
-	) ELSE (
-		REG QUERY "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
-			IF NOT ERRORLEVEL 1 (
-				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy^)"
-				SET "homeWSHLoc=WSH-ENABLE"
-			) ELSE (
-				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy^)"
-				SET "homeWSHLoc=WSH-DISABLE"
-
-			)
-	)
-
-ASSOC .vbs 2>&1| FINDSTR /I /X /c:".vbs=VBSFile" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeVBSMsg=Disable Visual Basic Script [VBS] (Legacy^)"
-		SET "homeVBSLoc=VBS-DISABLE"
-	) ELSE (
-		SET "homeVBSMsg=Enable Visual Basic Script [VBS] (Legacy^)"
-		SET "homeVBSLoc=VBS-ENABLE"
-	)
-
-REG QUERY "HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing 2>&1 | FINDSTR /R /X /C:".*EnableActiveProbing[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeNCSIMsg=Disable NCSI Active Probing (Legacy^)"
-		SET "homeNCSILoc=NCSI-DISABLE"
-	) ELSE (
-		SET "homeNCSIMsg=Enable NCSI Active Probing (Legacy^)"
-		SET "homeNCSILoc=NCSI-ENABLE"
-	)
-
-SET "homeExtCh=12345670X"
-
-SET "homeNVCPMsg=Write-Host '                 [7] Install NVIDIA Control Panel'"
-IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
-	SET "homeNVCPLoc=NVCP-UNINSTALL"
-	SET "homeNVCPMsg=Write-Host '                 [7] Uninstall NVIDIA Control Panel'"
-) ELSE (
-	SET "homeNVCPLoc=NVCP-INSTALL"
-	WMIC path win32_VideoController get name | FINDSTR "NVIDIA GeForce GTX RTX" > NUL 2>&1
-	IF ERRORLEVEL 1 (
-		SET "homeExtCh=1234560X"
-		SET "homeNVCPMsg=Write-Host '                 [7] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [No NVIDIA GPU]' -ForegroundColor Red"
-	) ELSE (
-		SC query "NVDisplay.ContainerLocalSystem" > NUL 2>&1
-			IF ERRORLEVEL 1 (
-				SET "homeExtCh=1234560X"
-				SET "homeNVCPMsg=Write-Host '                 [7] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [No NVIDIA Driver]' -ForegroundColor Red"
-			) ELSE (
-				IF EXIST "%SYSTEMDRIVE%\Program Files\WindowsApps" (
-					DIR /A:d /B "%SYSTEMDRIVE%\Program Files\WindowsApps" | FINDSTR /c:"NVIDIACorp.NVIDIAControlPanel" > NUL 2>&1
-						IF NOT ERRORLEVEL 1 (
-							FOR /F "usebackq delims=" %%A IN (`DIR /A:d /B "%SYSTEMDRIVE%\Program Files\WindowsApps" ^| FINDSTR /c:"NVIDIACorp.NVIDIAControlPanel"`) DO (
-								DIR /B "%SYSTEMDRIVE%\Program Files\WindowsApps\%%A" | FINDSTR /i /x /c:"nvcplui.exe" > NUL 2>&1
-									IF ERRORLEVEL 1 (
-										CURL store.rg-adguard.net 2>&1 | FINDSTR /I /c:"Cloudflare Ray ID" > NUL 2>&1
-											IF NOT ERRORLEVEL 1 (
-												SET "homeExtCh=1234560X"
-												SET "homeNVCPMsg=Write-Host '                 [7] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Server Unavailable]' -ForegroundColor Red"
-											)
-									)
-							)
-						) ELSE (
-							CURL store.rg-adguard.net 2>&1 | FINDSTR /I /c:"Cloudflare Ray ID" > NUL 2>&1
-								IF NOT ERRORLEVEL 1 (
-									SET "homeExtCh=1234560X"
-									SET "homeNVCPMsg=Write-Host '                 [7] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Server Unavailable]' -ForegroundColor Red"
-								)
-						)
-				)
-			)
-	)
-)
-CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeExtWSLMsg=""" -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red -NoNewLine; Write-Host """"
-		IF "%homeExtCh%"=="1234560X" (
-			SET "homeExtCh=234560X"
-		) ELSE (
-			SET "homeExtCh=2345670X"
-		)
-	) ELSE (
-		SET "homeExtWSLMsg="
-	)
-
-POWERSHELL -NoP -C "Write-Host """                 [1] Manage WSL%homeExtWSLMsg%`n                 [2] %homeHIBMsg%`n                 [3] %homeWSHMsg%`n                 [4] %homeVBSMsg%`n                 [5] %homeNCSIMsg%`n                 [6] Create New User (Beta^)"""; %homeNVCPMsg%; Write-Host """`n                 [0] Return to Menu`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C %homeExtCh% /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-	IF "%homeExtCh%"=="1234560X" (
-		IF ERRORLEVEL 8 EXIT /B 0
-		IF ERRORLEVEL 7 GOTO HOME-MAINMENU
-		IF ERRORLEVEL 6 (
-			CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
-			POWERSHELL -NoP -C "Write-Host """`n`n`n             WARNING: This is a beta feature, use at your own risk.`n           __________________________________________________________`n`n           Press any key to continue: """ -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"
-			GOTO NEWUSER-MENU
-		)
-		IF ERRORLEVEL 5 GOTO %homeNCSILoc%
-		IF ERRORLEVEL 4 GOTO %homeVBSLoc%
-		IF ERRORLEVEL 3 GOTO %homeWSHLoc%
-		IF ERRORLEVEL 2 GOTO %homeHIBLoc%
-		IF ERRORLEVEL 1 GOTO HOME-WSL
-	)
-	IF "%homeExtCh%"=="234560X" (
-		IF ERRORLEVEL 7 EXIT /B 0
-		IF ERRORLEVEL 6 GOTO HOME-MAINMENU
-		IF ERRORLEVEL 5 (
-			CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
-			POWERSHELL -NoP -C "Write-Host """`n`n`n             WARNING: This is a beta feature, use at your own risk.`n           __________________________________________________________`n`n           Press any key to continue: """ -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"
-			GOTO NEWUSER-MENU
-		)
-		IF ERRORLEVEL 4 GOTO %homeNCSILoc%
-		IF ERRORLEVEL 3 GOTO %homeVBSLoc%
-		IF ERRORLEVEL 2 GOTO %homeWSHLoc%
-		IF ERRORLEVEL 1 GOTO %homeHIBLoc%
-	)
-	IF "%homeExtCh%"=="2345670X" (
-		IF ERRORLEVEL 8 EXIT /B 0
-		IF ERRORLEVEL 7 GOTO HOME-MAINMENU
-		IF ERRORLEVEL 6 GOTO %homeNVCPLoc%
-		IF ERRORLEVEL 5 (
-			CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
-			POWERSHELL -NoP -C "Write-Host """`n`n`n             WARNING: This is a beta feature, use at your own risk.`n           __________________________________________________________`n`n           Press any key to continue: """ -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"
-			GOTO NEWUSER-MENU
-		)
-		IF ERRORLEVEL 4 GOTO %homeNCSILoc%
-		IF ERRORLEVEL 3 GOTO %homeVBSLoc%
-		IF ERRORLEVEL 2 GOTO %homeWSHLoc%
-		IF ERRORLEVEL 1 GOTO %homeHIBLoc%
-	)
-	IF ERRORLEVEL 9 EXIT /B 0
-	IF ERRORLEVEL 8 GOTO HOME-MAINMENU
-	IF ERRORLEVEL 7 GOTO %homeNVCPLoc%
-	IF ERRORLEVEL 6 (
-		CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
-		POWERSHELL -NoP -C "Write-Host """`n`n`n             WARNING: This is a beta feature, use at your own risk.`n           __________________________________________________________`n`n           Press any key to continue: """ -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"
-		GOTO NEWUSER-MENU
-	)
-	IF ERRORLEVEL 5 GOTO %homeNCSILoc%
-	IF ERRORLEVEL 4 GOTO %homeVBSLoc%
-	IF ERRORLEVEL 3 GOTO %homeWSHLoc%
-	IF ERRORLEVEL 2 GOTO %homeHIBLoc%
-	IF ERRORLEVEL 1 GOTO HOME-WSL
-
+CALL :MO-CHOICE -InitChoices "1234567890X" "+GOTO HOME-WSL+GOTO !homeHIBLoc!+GOTO !homeNOTIFCENLoc!+GOTO !homeNOTIFLoc!+GOTO !homeWSHLoc!+GOTO !homeVBSLoc!+GOTO !homeNCSILoc!+CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            | Central AME Script %ver% | & POWERSHELL -NoP -C ""Write-Host """"""""`n`n`n$(' '.padleft(13, ' '))WARNING: This is a beta feature, use at your own risk.`n$(' '.padleft(11, ' '))__________________________________________________________`n`n$(' '.padleft(11, ' '))Press any key to continue: """""""" -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"" & GOTO NEWUSER-MENU+GOTO !homeNVCPLoc!+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-EXTRA
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Manage WSL%homeExtWSLMsg%`n$(' '.padleft(17, ' '))[2] %homeHIBMsg%`n$(' '.padleft(17, ' '))[3] %homeNOTIFCENMsg%`n$(' '.padleft(17, ' '))[4] %homeNOTIFMsg%`n$(' '.padleft(17, ' '))[5] %homeWSHMsg%`n$(' '.padleft(17, ' '))[6] %homeVBSMsg%`n$(' '.padleft(17, ' '))[7] %homeNCSIMsg%`n$(' '.padleft(17, ' '))[8] Create New User (Beta)""""; %homeNVCPMsg%; Write-Host """"`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit`n"
 
 :HOME-LANGUAGE
 
@@ -510,14 +306,8 @@ IF "%adminPrivs%"=="false" GOTO HOME-LIMLANGUAGE
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. 
 
-POWERSHELL -NoP -C "Write-Host """                 [1] Change Display Language`n                 [2] Add Keyboard Language`n                 [3] Remove Keyboard Language`n                 [4] Install Language Pack`n                 [5] Uninstall Language Pack`n`n                 [0] Return to Menu`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C 123450X /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-	IF %ERRORLEVEL%==1 SET "lpStatus=" & GOTO DISPLANG-MENUP1
-	IF %ERRORLEVEL%==2 SET "kbLangLoc=:COMM:& GOTO KBLANG-PRESET" & GOTO KBLANG-LANGS
-	IF %ERRORLEVEL%==3 SET "kbLangLoc=:COMM:& GOTO KBLANG-REMOVELANG" & GOTO KBLANG-LANGS
-	IF %ERRORLEVEL%==4 SET "lpStatus=added" & GOTO DISPLANG-MENUP1
-	IF %ERRORLEVEL%==5 SET "lpStatus=removed" & GOTO DISPLANG-MENUP1
-	IF %ERRORLEVEL%==6 GOTO HOME-MAINMENU
-	IF %ERRORLEVEL%==7 EXIT /B 0
+CALL :MO-CHOICE -InitChoices "123450X" "+SET ""lpStatus="" & GOTO DISPLANG-MENUP1+SET ""kbLangLoc=:COMM:& GOTO KBLANG-PRESET"" & GOTO KBLANG-LANGS+SET ""kbLangLoc=:COMM:& GOTO KBLANG-REMOVELANG"" & GOTO KBLANG-LANGS+SET ""lpStatus=added"" & GOTO DISPLANG-MENUP1+SET ""lpStatus=removed"" & GOTO DISPLANG-MENUP1+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Change Display Language`n$(' '.padleft(17, ' '))[2] Add Keyboard Language`n$(' '.padleft(17, ' '))[3] Remove Keyboard Language`n$(' '.padleft(17, ' '))[4] Install Language Pack`n$(' '.padleft(17, ' '))[5] Uninstall Language Pack`n`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit`n"
 
 :HOME-WSL
 
@@ -525,207 +315,57 @@ IF "%adminPrivs%"=="false" GOTO HOME-LIMWSL
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. 
 
-SET "homeWSLChPos=16"
-SET "homeWSLStatus=`n`n"
-DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 (
-		SET "homeWSLMsg=Enable WSL"
-		SET "homeWSLLoc=WSL-ENABLE"
-	) ELSE (
-		SET "homeWSLMsg=Disable WSL"
-		SET "homeWSLLoc=WSL-DISABLE"
-		WHERE WSL.exe > NUL 2>&1
-			IF ERRORLEVEL 1 (
-				SET "homeWSLStatus="""; Write-Host """`n                  A restart is required for WSL functionality.""" -ForegroundColor Red; Write-Host """"
-				SET "homeWSLChPos=17"
-			)
-	)
+CALL :MO-CHOICE -InitChoices "123U0X" "+GOTO !homeWSLLoc!+SET ""wslMenuLoc=WSL-DISTROINSTALL"" & GOTO WSL-DISTROMENUP1+SET ""wslMenuLoc=WSL-DISTROREMOVE"" & GOTO WSL-DISTROMENUP1+POWERSHELL -NoP -C ""[Console]::SetCursorPosition(17,10); Write-Host '[U] Unattended Distro Install (Enabled) ' -NoNewLine -ForegroundColor Green; [Console]::SetCursorPosition(17,7); Write-Host '[2] Install WSL Distro' -NoNewLine; [Console]::SetCursorPosition(0,!homeWSLChPos!); Write-Host '           Choose a menu option:  ' -NoNewLine; [Console]::SetCursorPosition(33,!homeWSLChPos!)"" & SET ""wslUnattend=true"" & GOTO INTERNAL-HOME_WSL-MARKER+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-WSL
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] %homeWSLMsg%%homeWSLDistroMsgs%`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit%homeWSLStatus%"
 
-SET "homeWSLCh=1230X"
-SET "wslUnattend="
-
-
-WHERE WSL.exe > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 (
-		SET "homeWSLCh=1U0X"
-		SET "homeWSLDistroMsgs="""; Write-Host """                 [2] Install WSL Distro`n                 [3] Remove WSL Distro`n""" -ForegroundColor DarkGray; Write-Host """                 [U] Unattended Distro Install [Disabled]""" -NoNewLine; Write-Host """ "
-	) ELSE (
-		SET "homeWSLDistroMsgs=`n                 [2] Install WSL Distro`n                 [3] Remove WSL Distro`n"
-	)
-
-POWERSHELL -NoP -C "Write-Host """                 [1] %homeWSLMsg%%homeWSLDistroMsgs%`n                 [0] Return to Menu`n                 [X] Exit%homeWSLStatus%           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C %homeWSLCh% /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-	
-:HOME-WSLMARKER
+:INTERNAL-HOME_WSL-MARKER
 
 IF "%wslUnattend%"=="true" (
 	POWERSHELL -NoP -C "[Console]::CursorVisible = $True; CHOICE /C 12U0X /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 		IF ERRORLEVEL 5 EXIT /B 0
 		IF ERRORLEVEL 4 GOTO HOME-MAINMENU
-		IF ERRORLEVEL 3 POWERSHELL -NoP -C "[Console]::SetCursorPosition(17,10); Write-Host '[U] Unattended Distro Install (Disabled)' -NoNewLine; [Console]::SetCursorPosition(17,7); Write-Host '[2] Install WSL Distro' -ForegroundColor DarkGray -NoNewLine; [Console]::SetCursorPosition(0,%homeWSLChPos%); Write-Host '           Choose a menu option:  ' -NoNewLine; [Console]::SetCursorPosition(33,%homeWSLChPos%)" & SET "wslUnattend=false" & GOTO HOME-WSLMARKER
+		IF ERRORLEVEL 3 POWERSHELL -NoP -C "[Console]::SetCursorPosition(17,10); Write-Host '[U] Unattended Distro Install (Disabled)' -NoNewLine; [Console]::SetCursorPosition(17,7); Write-Host '[2] Install WSL Distro' -ForegroundColor DarkGray -NoNewLine; [Console]::SetCursorPosition(0,%homeWSLChPos%); Write-Host '           Choose a menu option:  ' -NoNewLine; [Console]::SetCursorPosition(33,%homeWSLChPos%)" & SET "wslUnattend=false" & GOTO INTERNAL-HOME_WSL-MARKER
 		IF ERRORLEVEL 2 SET "wslMenuLoc=WSL-DISTROINSTALL" & GOTO WSL-DISTROMENUP1
 		IF ERRORLEVEL 1 GOTO %homeWSLLoc%
 )
-IF "%homeWSLCh%"=="1U0X" (
-	IF NOT "%wslUnattend%"=="" POWERSHELL -NoP -C "[Console]::CursorVisible = $True; CHOICE /C 1U0X /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-		IF ERRORLEVEL 4 EXIT /B 0
-		IF ERRORLEVEL 3 GOTO HOME-MAINMENU
-		IF ERRORLEVEL 2 POWERSHELL -NoP -C "[Console]::SetCursorPosition(17,10); Write-Host '[U] Unattended Distro Install (Enabled) ' -NoNewLine -ForegroundColor Green; [Console]::SetCursorPosition(17,7); Write-Host '[2] Install WSL Distro' -NoNewLine; [Console]::SetCursorPosition(0,%homeWSLChPos%); Write-Host '           Choose a menu option:  ' -NoNewLine; [Console]::SetCursorPosition(33,%homeWSLChPos%)" & SET "wslUnattend=true" & GOTO HOME-WSLMARKER
-		IF ERRORLEVEL 1 GOTO %homeWSLLoc%
-)
-	IF ERRORLEVEL 5 EXIT /B 0
-	IF ERRORLEVEL 4 GOTO HOME-MAINMENU
-	IF ERRORLEVEL 3 SET "wslMenuLoc=WSL-DISTROREMOVE" & GOTO WSL-DISTROMENUP1
-	IF ERRORLEVEL 2 SET "wslMenuLoc=WSL-DISTROINSTALL" & GOTO WSL-DISTROMENUP1
+
+IF NOT "%wslUnattend%"=="" POWERSHELL -NoP -C "[Console]::CursorVisible = $True; CHOICE /C 1U0X /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+	IF ERRORLEVEL 4 EXIT /B 0
+	IF ERRORLEVEL 3 GOTO HOME-MAINMENU
+	IF ERRORLEVEL 2 POWERSHELL -NoP -C "[Console]::SetCursorPosition(17,10); Write-Host '[U] Unattended Distro Install (Enabled) ' -NoNewLine -ForegroundColor Green; [Console]::SetCursorPosition(17,7); Write-Host '[2] Install WSL Distro' -NoNewLine; [Console]::SetCursorPosition(0,%homeWSLChPos%); Write-Host '           Choose a menu option:  ' -NoNewLine; [Console]::SetCursorPosition(33,%homeWSLChPos%)" & SET "wslUnattend=true" & GOTO INTERNAL-HOME_WSL-MARKER
 	IF ERRORLEVEL 1 GOTO %homeWSLLoc%
 
 :HOME-LIMMAINMENU
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-CALL :AUX-ELEVATIONCHECK
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeElevMsg=De-elevate User"
-	) ELSE (
-		SET "homeElevMsg=Elevate User to Administrator"
-	)
-
-REG QUERY "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername 2>&1 | FINDSTR /R /X /C:".*dontdisplaylastusername[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeNUMsg=Disable Username Login Requirement"
-	) ELSE (
-		SET "homeNUMsg=Enable Username Login Requirement"
-	)
-
-REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /c:"%currentUsername%" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]0" > NUL 2>&1
-			IF ERRORLEVEL 1 (
-				SET "homeALMsg=Disable AutoLogon"
-			) ELSE (
-				SET "homeALMsg=Enable AutoLogon"
-			)
-	) ELSE (
-		SET "homeALMsg=Enable AutoLogon"
-	)
-
-POWERSHELL -NoP -C "Write-Host """                 [1] Change Username or Password""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [2] Change Lockscreen Image""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [3] Change Profile Image""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [4] Manage Language Settings"""; Write-Host """                 [5] %homeElevMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [6] %homeNUMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [7] %homeALMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """`n                 [E] Extra`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C 4EX /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-		IF %ERRORLEVEL%==1 GOTO HOME-LIMLANGUAGE
-		IF %ERRORLEVEL%==2 GOTO HOME-EXTRA
-		IF %ERRORLEVEL%==3 EXIT /B 0
+CALL :MO-CHOICE -InitChoices "4EX" "+GOTO HOME-LIMLANGUAGE+GOTO HOME-EXTRA+EXIT /B 0+"
+CALL :MO-LIMMAINMENU
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Change Username or Password"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[2] Change Lockscreen Image"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[3] Change Profile Image"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[4] Manage Language Settings""""; Write-Host """"$(' '.padleft(17, ' '))[5] %homeElevMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[6] %homeNUMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[7] %homeALMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"`n$(' '.padleft(17, ' '))[E] Extra`n$(' '.padleft(17, ' '))[X] Exit`n"
 
 :HOME-LIMEXTRA
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled 2>&1 | FINDSTR /R /X /C:".*HibernateEnabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HiberFileType 2>&1 | FINDSTR /R /X /C:".*HiberFileType[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-			IF NOT ERRORLEVEL 1 (
-				SET "homeHIBMsg=Disable Hibernation"
-			) ELSE (
-				SET "homeHIBMsg=Enable Hibernation"
-			)
-	) ELSE (
-		SET "homeHIBMsg=Enable Hibernation"
-	)
-
-REG QUERY "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-			IF ERRORLEVEL 1 (
-				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy^)"
-			) ELSE (
-				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy^)"
-
-			)
-	) ELSE (
-		REG QUERY "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
-			IF NOT ERRORLEVEL 1 (
-				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy^)"
-			) ELSE (
-				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy^)"
-
-			)
-	)
-
-ASSOC .vbs 2>&1| FINDSTR /I /X /c:".vbs=VBSFile" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeVBSMsg=Disable Visual Basic Script [VBS] (Legacy^)"
-		SET "homeVBSLoc=VBS-DISABLE"
-	) ELSE (
-		SET "homeVBSMsg=Enable Visual Basic Script [VBS] (Legacy^)"
-		SET "homeVBSLoc=VBS-ENABLE"
-	)
-
-REG QUERY "HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing 2>&1 | FINDSTR /R /X /C:".*EnableActiveProbing[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeNCSIMsg=Disable NCSI Active Probing (Legacy^)"
-	) ELSE (
-		SET "homeNCSIMsg=Enable NCSI Active Probing (Legacy^)"
-	)
-
-SET "homeNVCPMsg=Write-Host '                 [7] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red"
-IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
-	SET "homeNVCPMsg=Write-Host '                 [7] Uninstall NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red"
-)
-
-CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
-		SET "homeExtWSLMsg= -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red"
-		SET "homeExtCh=0X"
-	) ELSE (
-		SET "homeExtCh=10X"
-		SET "homeExtWSLMsg="
-	)
-
-POWERSHELL -NoP -C "Write-Host """                 [1] Manage WSL"""%homeExtWSLMsg%; Write-Host """                 [2] %homeHIBMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [3] %homeWSHMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [4] %homeVBSMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [5] %homeNCSIMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [6] Create New User (Beta^)""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; %homeNVCPMsg%; Write-Host """`n                 [0] Return to Menu`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C %homeExtCh% /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-	IF "%homeExtCh%"=="0X" (
-		IF %ERRORLEVEL%==1 GOTO HOME-MAINMENU
-		IF %ERRORLEVEL%==2 EXIT /B 0
-	)
-	IF %ERRORLEVEL%==1 GOTO HOME-LIMWSL
-	IF %ERRORLEVEL%==2 GOTO HOME-MAINMENU
-	IF %ERRORLEVEL%==3 EXIT /B 0
+CALL :MO-CHOICE -InitChoices "140X" "+GOTO HOME-LIMWSL+GOTO !homeNOTIFLoc!+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-LIMEXTRA
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Manage WSL""""%homeExtWSLMsg%; Write-Host """"$(' '.padleft(17, ' '))[2] %homeHIBMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[3] %%homeNOTIFCENMsg%%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[4] %%homeNOTIFMsg%%""""; Write-Host """"$(' '.padleft(17, ' '))[5] %homeWSHMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[6] %homeVBSMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[7] %homeNCSIMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[8] Create New User (Beta)"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; %homeNVCPMsg%; Write-Host """"`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit`n"
 
 :HOME-LIMLANGUAGE
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-POWERSHELL -NoP -C "Write-Host """                 [1] Change Display Language""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [2] Add Keyboard Language`n                 [3] Remove Keyboard Language"""; Write-Host """                 [4] Install Language Pack""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """                 [5] Uninstall Language Pack""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """`n                 [0] Return to Menu`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C 230X /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-	IF %ERRORLEVEL%==1 SET "kbLangLoc=:COMM:& GOTO KBLANG-PRESET" & GOTO KBLANG-LANGS
-	IF %ERRORLEVEL%==2 SET "kbLangLoc=:COMM:& GOTO KBLANG-REMOVELANG" & GOTO KBLANG-LANGS
-	IF %ERRORLEVEL%==3 GOTO HOME-MAINMENU
-	IF %ERRORLEVEL%==4 EXIT /B 0
+CALL :MO-CHOICE -InitChoices "230X" "+SET ""kbLangLoc=:COMM:& GOTO KBLANG-PRESET"" & GOTO KBLANG-LANGS+SET ""kbLangLoc=:COMM:& GOTO KBLANG-REMOVELANG"" & GOTO KBLANG-LANGS+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Change Display Language"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[2] Add Keyboard Language`n$(' '.padleft(17, ' '))[3] Remove Keyboard Language""""; Write-Host """"$(' '.padleft(17, ' '))[4] Install Language Pack"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"$(' '.padleft(17, ' '))[5] Uninstall Language Pack"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit`n"
 
 :HOME-LIMWSL
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO. 
 
-WHERE WSL.exe > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 (
-		SET "homeWSLMsg=Enable WSL"
-	) ELSE (
-		SET "homeWSLMsg=Disable WSL"
-	)
-
-SET "homeLIMWSLCh=230X"
-
-WHERE WSL.exe > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 (
-		SET "homeLIMWSLCh=0X"
-		SET "homeWSLDistroMsgs=                 [2] Install WSL Distro`n                 [3] Remove WSL Distro`n`n                 [U] Unattended Distro Install""" -ForegroundColor DarkGray -NoNewLine; Write-Host """ [Admin Required]""" -ForegroundColor Red -NoNewLine; Write-Host """"
-	) ELSE (
-		SET "homeWSLDistroMsgs=                 [2] Install WSL Distro`n                 [3] Remove WSL Distro`n"
-	)
-POWERSHELL -NoP -C "Write-Host """                 [1] %homeWSLMsg%""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """%homeWSLDistroMsgs%`n                 [0] Return to Menu`n                 [X] Exit`n`n           __________________________________________________________`n`n           Choose a menu option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C %homeLIMWSLCh% /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-	IF "%homeWSLCh%"=="0X" (
-		IF ERRORLEVEL 2 EXIT /B 0
-		IF ERRORLEVEL 1 GOTO HOME-MAINMENU
-	)
-	IF ERRORLEVEL 4 EXIT /B 0
-	IF ERRORLEVEL 3 GOTO HOME-MAINMENU
-	IF ERRORLEVEL 2 SET "wslMenuLoc=WSL-DISTROREMOVE" & GOTO WSL-DISTROMENUP1
-	IF ERRORLEVEL 1 SET "wslMenuLoc=WSL-DISTROINSTALL" & GOTO WSL-DISTROMENUP1
+CALL :MO-CHOICE -InitChoices "230X" "+SET ""wslMenuLoc=WSL-DISTROINSTALL"" & GOTO WSL-DISTROMENUP1+SET ""wslMenuLoc=WSL-DISTROREMOVE"" & GOTO WSL-DISTROMENUP1+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-LIMWSL
+CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] %homeWSLMsg%"""" -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red; Write-Host """"%homeWSLDistroMsgs%`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit`n"
 REM --------------------------MENU-END--------------------------
 
 
@@ -756,7 +396,7 @@ CALL :AUX-INPUTLOOP "newUsername" "Enter new username, or 'Cancel' to quit" "0" 
 	IF %ERRORLEVEL% EQU 3 ENDLOCAL & GOTO HOME-MAINMENU
 
 ENDLOCAL & SET "currentUsername=%newUsername%"
-CALL :AUX-RETURN "Username changed successfully" -HNR -R -L "A restart is recommended."
+CALL :AUX-RETURN "Username changed successfully" -HNR R:L.sign-out -L "A sign-out is recommended."
 
 :USERPASS-PASSWORD
 
@@ -793,7 +433,7 @@ ECHO. & ECHO                                 Select your image
 DIR /B "%SYSTEMDRIVE%\Users" | FINDSTR /x "%possibleUserDir%" > NUL 2>&1
 	IF %ERRORLEVEL% LEQ 0 SET "UserPath=\%possibleUserDir%"
 
-FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "lockImgPath=%%~I"
+FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "Start-Sleep -Milliseconds 200; [System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "lockImgPath=%%~I"
 	IF "%lockImgPath%"=="" CALL :AUX-RETURN "You must select an image." -H -E
 
 POWERSHELL -NoP -C "Write-Host """`n           Remove lockscreen blur? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
@@ -837,7 +477,7 @@ REM Used for default starting directory for file selection window
 DIR /B "%SYSTEMDRIVE%\Users" | FINDSTR /x "%possibleUserDir%" > NUL 2>&1
 	IF %ERRORLEVEL% LEQ 0 SET "UserPath=\%possibleUserDir%"
 
-FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "[System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "pfpImgPath=%%~I"
+FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "Start-Sleep -Milliseconds 200; [System.Reflection.Assembly]::LoadWithPartialName('System.windows.forms')|Out-Null;$OFD = New-Object System.Windows.Forms.OpenFileDialog;$OFD.Multiselect = $False;$OFD.Filter = 'Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif';$OFD.InitialDirectory = '%SYSTEMDRIVE%\Users%UserPath%';$OFD.ShowDialog()|out-null;$OFD.FileNames"`) DO SET "pfpImgPath=%%~I"
 	IF "%pfpImgPath%"=="" CALL :AUX-RETURN "You must select an image." -H -E
 
 :PFP-DEPLOY
@@ -893,31 +533,31 @@ REM -------------------------ELEVATION--------------------------
 
 SETLOCAL
 
-IF "%userStatus%"=="Elevated" CALL :AUX-RETURN "The current user is already an Administrator." -H -E
-
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
 
 ECHO. & ECHO                   Granting Admin rights to the current user...
 
+IF "%userStatus%"=="Elevated" CALL :AUX-RETURN "The current user is already an Administrator." -H -E
+
 TIMEOUT /T 2 /NOBREAK > NUL
 NET localgroup administrators "%currentUsername%" /add > NUL 2>&1
 	IF %ERRORLEVEL% GTR 0 CALL :AUX-RETURN "Failed to change user permissions" -H -L "A restart may fix this." -E
-	IF %ERRORLEVEL% LEQ 0 ENDLOCAL & SET "userStatus=Elevated" & CALL :AUX-RETURN "The current user is now an Administrator" -HNR -R -L "A restart is needed to take effect."
+	IF %ERRORLEVEL% LEQ 0 ENDLOCAL & SET "userStatus=Elevated" & CALL :AUX-RETURN "The current user is now an Administrator" -HNR R:L.sign-out -L "A sign-out is required to take effect."
 
 :ELEVATE-REVOKE
 
 SETLOCAL
 
-IF "%userStatus%"=="Not Elevated" CALL :AUX-RETURN "The current user is not an Administrator." -H -E
-
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
 
 ECHO. & ECHO                  Revoking Admin rights from the current user...
 
+IF "%userStatus%"=="Not Elevated" CALL :AUX-RETURN "The current user is not an Administrator." -H -E
+
 TIMEOUT /T 2 /NOBREAK > NUL 2>&1
 NET localgroup administrators "%currentUsername%" /delete > NUL 2>&1
 	IF %ERRORLEVEL% GTR 0 CALL :AUX-RETURN "Failed to change user permissions" -H -L "A restart may fix this." -E
-	IF %ERRORLEVEL% LEQ 0 ENDLOCAL & SET "userStatus=Not Elevated" & CALL :AUX-RETURN "Admin rights have been revoked for the current user" -HNR -R -L "A restart is needed to take effect."
+	IF %ERRORLEVEL% LEQ 0 ENDLOCAL & SET "userStatus=Not Elevated" & CALL :AUX-RETURN "Admin rights have been revoked for the current user" -HNR R:L.sign-out -L "A sign-out is required to take effect."
 REM -----------------------ELEVATION-END------------------------
 
 
@@ -1038,8 +678,8 @@ IF NOT "%dispChoco%"=="true" (
 	IF NOT "%dispSkip0%"=="rem " CALL :AUX-RETURN "7-Zip or Chocolatey must be installed." "HOME-LANGUAGE" -E
 )
 
-TASKLIST /FI "IMAGENAME eq lpksetup.exe" 2>&1 | FINDSTR /c:"INFO: No tasks are running" > NUL 2>&1
-	IF %ERRORLEVEL% NEQ 0 CALL :AUX-RETURN "All instances of lpksetup.exe must be closed." "HOME-LANGUAGE" -E
+TASKLIST /FI "IMAGENAME eq lpksetup.exe" 2>&1 | FINDSTR /i /c:"lpksetup.exe" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "All instances of lpksetup.exe must be closed." "HOME-LANGUAGE" -E
 IF "%dispDl%"=="2480000" POWERSHELL -NoP -C "Write-Host """`n           A ~2.5GB Language Packs ISO must be downloaded`n           Continue? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 IF "%dispDl%"=="2900000" POWERSHELL -NoP -C "Write-Host """`n           A ~2.9GB Language Packs ISO must be downloaded`n           Continue? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 IF "%dispDl%"=="3230000" POWERSHELL -NoP -C "Write-Host """`n           A ~3.2GB Language Packs ISO must be downloaded`n           Continue? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
@@ -1131,7 +771,7 @@ IF "%makeKBDef%"=="false" POWERSHELL -NoP -C "Set-WinDefaultInputMethodOverride 
 ENDLOCAL
 IF /I "%~1"=="LangSet" ECHO Golden> "%TEMP%\[amecs]-LangComm%rndOut%.txt" & EXIT 0
 
-CALL :AUX-RETURN "Display language changed to %langSel%" -H -R -L "A restart is needed to take effect."
+CALL :AUX-RETURN "Display language changed to %langSel%" -H "R:R -T 0.restart" -L "A restart is required to take effect."
 
 :DISPLANG-LPCOMPLETE
 
@@ -1166,7 +806,7 @@ CALL :AUX-ALTSTART "SetDispLang" "CMD /C 'START /min '' '|Script|' LangSet %lang
 
 	CALL :AUX-WAITLOOP "-C:Golden" "%userTemp%\[amecs]-LangComm%rndOut%.txt" -TME "30"
 		IF %ERRORLEVEL% NEQ 0 CALL :AUX-RETURN "Failed to set language settings." "HOME-LANGUAGE" -C -E
-		CALL :AUX-RETURN "Display language changed to %langSel%" -H -R -L "A restart is needed to take effect." -C
+		CALL :AUX-RETURN "Display language changed to %langSel%" -H "R:R -T 0.restart" -L "A restart is required to take effect." -C
 REM ------------------------DISPLANG-END------------------------
 
 
@@ -1475,7 +1115,7 @@ ECHO. & ECHO                      Enabling username login requirement...
 TIMEOUT /T 2 /NOBREAK > NUL
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername /t REG_DWORD /d 1 /f > NUL 2>&1
 
-CALL :AUX-RETURN "The username login requirement is now enabled" -H -R -L "A restart is required to take effect."
+CALL :AUX-RETURN "The username login requirement is now enabled" -H R:L.sign-out -L "A sign-out is required to take effect."
 REM -----------------------NOUSERNAME-END-----------------------
 
 
@@ -1504,8 +1144,8 @@ POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.e
 
 REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /c:"%currentUsername%" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]0" > NUL 2>&1
-			IF ERRORLEVEL 1 CALL :AUX-RETURN "Failed to enable AutoLogon. (3)" -H -E -C
+		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]1" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 CALL :AUX-RETURN "Failed to enable AutoLogon. (3)" -H -E -C
 	)
 
 IF NOT "%userPassword%"=="" (
@@ -1549,8 +1189,8 @@ POWERSHELL -NoP -C "EXIT (Start-Process '%TEMP:'=''%\[amecs]-AutoLogon%rndOut%.e
 
 REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /I /E /c:"    %currentUsername%" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]0" > NUL 2>&1
-			IF ERRORLEVEL 1 CALL :AUX-RETURN "Failed to disable AutoLogon. (3)" -H -E -C
+		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]1" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 CALL :AUX-RETURN "Failed to disable AutoLogon. (3)" -H -E -C
 	)
 
 CALL :AUX-RETURN "Disabled AutoLogon successfully" -H -C
@@ -1585,7 +1225,7 @@ DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | F
 WHERE wsl.exe > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Enabled WSL successfully" -H
 
-CALL :AUX-RETURN "Enabled WSL successfully" -H -R -L "A restart is required to complete the setup."
+CALL :AUX-RETURN "Enabled WSL successfully" -H "R:R -T 0.restart" -L "A restart is required to complete the setup."
 
 :WSL-DISABLE
 
@@ -1608,7 +1248,7 @@ DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | F
 WHERE wsl.exe > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 CALL :AUX-RETURN "Disabled WSL successfully" -H
 
-CALL :AUX-RETURN "Disabled WSL successfully" -H -R -L "A restart is required to complete the setup."
+CALL :AUX-RETURN "Disabled WSL successfully" -H "R:R -T 0.restart" -L "A restart is required to complete the setup."
 
 :WSL-DISTROMENUP1
 
@@ -1864,7 +1504,7 @@ POWERSHELL -NoP -C "[console]::OutputEncoding = [Text.UnicodeEncoding]::Unicode;
 		GOTO WSL-DISTROCONFIG
 	)
 
-TASKLIST /FI "IMAGENAME eq cmd.exe" /FI "PID eq %distroHostPID%" 2>&1 | FINDSTR /i /c:"ERROR:" /c:"INFO: No tasks are running">NUL 2>&1 && SET /A "count1=%count1%+50"
+TASKLIST /FI "IMAGENAME eq cmd.exe" /FI "PID eq %distroHostPID%" 2>&1 | FINDSTR /i /c:"cmd.exe">NUL 2>&1 || SET /A "count1=%count1%+50"
 
 SET /A "count1=%count1%+1"
 GOTO WSL-DISTROPROGRESS
@@ -2042,6 +1682,62 @@ REM --------------------------WSL-END---------------------------
 
 
 
+REM ---------------------------NOTIF----------------------------
+:NOTIF-ENABLE
+
+SETLOCAL
+
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+
+ECHO. & ECHO                         Enabling desktop notifications...
+
+TIMEOUT /T 2 /NOBREAK > NUL
+REG ADD "HKU\%userSID%\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 1 /f > NUL
+CALL :AUX-RETURN "Desktop notifications are now enabled" -H R:L.sign-out -L "A sign-out is required to take effect."
+
+:NOTIF-DISABLE
+
+SETLOCAL
+
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+
+ECHO. & ECHO                        Disabling desktop notifications...
+
+TIMEOUT /T 2 /NOBREAK > NUL
+REG ADD "HKU\%userSID%\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f > NUL
+CALL :AUX-RETURN "Desktop notifications are now disabled" -H R:L.sign-out -L "A sign-out is required to take effect."
+REM -------------------------NOTIF-END-------------------------
+
+
+
+REM -------------------------NOTIFCEN--------------------------
+:NOTIFCEN-ENABLE
+
+SETLOCAL
+
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+
+ECHO. & ECHO                          Enabling Notification Center...
+
+TIMEOUT /T 2 /NOBREAK > NUL
+REG ADD "HKU\%userSID%\Software\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 0 /f > NUL
+CALL :AUX-RETURN "The Notification Center is now enabled" -H R:L.sign-out -L "A sign-out is required to take effect."
+
+:NOTIFCEN-DISABLE
+
+SETLOCAL
+
+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
+
+ECHO. & ECHO                         Disabling Notification Center...
+
+TIMEOUT /T 2 /NOBREAK > NUL
+REG ADD "HKU\%userSID%\Software\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f > NUL
+CALL :AUX-RETURN "The Notification Center is now disabled" -H R:L.sign-out -L "A sign-out is required to take effect."
+REM -----------------------NOTIFCEN-END------------------------
+
+
+
 REM -------------------------HIBERNATE-------------------------
 :HIBERNATE-ENABLE
 
@@ -2084,10 +1780,12 @@ CLS & ECHO. & ECHO            __________________________________________________
 ECHO. & ECHO                          Enabling Windows Script Host...
 
 TIMEOUT /T 2 /NOBREAK > NUL
-REG ADD "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f > NUL
+REG ADD "HKU\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f > NUL
+REG ADD "HKCU\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f > NUL
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f > NUL
 
-CALL :AUX-RETURN "WSH is now enabled" -H -R -L "A restart is required to complete the setup."
+CALL :AUX-RETURN "WSH is now enabled" -H
+REM R:L.sign-out -L "A sign-out is required to complete the setup."
 
 :WSH-DISABLE
 
@@ -2098,10 +1796,12 @@ CLS & ECHO. & ECHO            __________________________________________________
 ECHO. & ECHO                         Disabling Windows Script Host...
 
 TIMEOUT /T 2 /NOBREAK > NUL
-REG ADD "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f > NUL
+REG ADD "HKU\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f > NUL
+REG ADD "HKCU\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f > NUL
 REG ADD "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f > NUL
 
-CALL :AUX-RETURN "WSH is now disabled" -H -R -L "A restart is required to complete."
+CALL :AUX-RETURN "WSH is now disabled" -H
+REM "R:R -T 0.restart" -L "A sign-out is required to complete."
 REM --------------------------WSH-END--------------------------
 
 
@@ -2406,6 +2106,441 @@ CALL :AUX-RETURN "Uninstalled NVIDIA Control Panel successfully" -H
 REM --------------------------NVCP-END-------------------------
 
 
+					REM ------------
+					REM Menu Options
+					REM ------------
+
+
+REM -----------------------------------------------------------
+:MO-MAINMENU
+
+CALL :AUX-ELEVATIONCHECK
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeElevMsg=De-elevate User"
+		SET "homeElevLoc=ELEVATE-REVOKE"
+	) ELSE (
+		SET "homeElevMsg=Elevate User to Administrator"
+		SET "homeElevLoc=ELEVATE-ELEVATE"
+	)
+
+REG QUERY "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername 2>&1 | FINDSTR /R /X /C:".*dontdisplaylastusername[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNUMsg=Disable Username Login Requirement"
+		SET "homeNULoc=NOUSERNAME-DISABLE"
+	) ELSE (
+		SET "homeNUMsg=Enable Username Login Requirement"
+		SET "homeNULoc=NOUSERNAME-ENABLE"
+	)
+
+
+REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /c:"%currentUsername%" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		REG QUERY "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]1" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 (
+				SET "homeALMsg=Disable AutoLogon"
+				SET "homeALLoc=AUTOLOGON-DISABLE"
+			) ELSE (
+				SET "homeALMsg=Enable AutoLogon"
+				SET "homeALLoc=AUTOLOGON-ENABLE"
+			)
+	) ELSE (
+		SET "homeALMsg=Enable AutoLogon"
+		SET "homeALLoc=AUTOLOGON-ENABLE"
+	)
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-EXTRA
+
+REG QUERY "HKU\%userSID%\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled 2>&1 | FINDSTR /R /X /C:".*ToastEnabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
+	IF %ERRORLEVEL% NEQ 0 (
+		SET "homeNOTIFMsg=Disable Desktop Notifications"
+		SET "homeNOTIFLoc=NOTIF-DISABLE"
+	) ELSE (
+		SET "homeNOTIFMsg=Enable Desktop Notifications"
+		SET "homeNOTIFLoc=NOTIF-ENABLE"
+	)
+
+REG QUERY "HKU\%userSID%\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter 2>&1 | FINDSTR /R /X /C:".*DisableNotificationCenter[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNOTIFCENMsg=Enable Notification Center"
+		SET "homeNOTIFCENLoc=NOTIFCEN-ENABLE"
+	) ELSE (
+		SET "homeNOTIFCENMsg=Disable Notification Center"
+		SET "homeNOTIFCENLoc=NOTIFCEN-DISABLE"
+	)
+
+REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled 2>&1 | FINDSTR /R /X /C:".*HibernateEnabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HiberFileType 2>&1 | FINDSTR /R /X /C:".*HiberFileType[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 (
+				SET "homeHIBMsg=Disable Hibernation"
+				SET "homeHIBLoc=HIBERNATE-DISABLE"
+			) ELSE (
+				SET "homeHIBMsg=Enable Hibernation"
+				SET "homeHIBLoc=HIBERNATE-ENABLE"
+			)
+	) ELSE (
+		SET "homeHIBMsg=Enable Hibernation"
+		SET "homeHIBLoc=HIBERNATE-ENABLE"
+	)
+
+REG QUERY "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		REG QUERY "HKU\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+			IF ERRORLEVEL 1 (
+				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy)"
+				SET "homeWSHLoc=WSH-ENABLE"
+			) ELSE (
+				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy)"
+				SET "homeWSHLoc=WSH-DISABLE"
+
+			)
+	) ELSE (
+		REG QUERY "HKU\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 (
+				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy)"
+				SET "homeWSHLoc=WSH-ENABLE"
+			) ELSE (
+				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy)"
+				SET "homeWSHLoc=WSH-DISABLE"
+
+			)
+	)
+
+ASSOC .vbs 2>&1| FINDSTR /I /X /c:".vbs=VBSFile" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeVBSMsg=Disable Visual Basic Script [VBS] (Legacy)"
+		SET "homeVBSLoc=VBS-DISABLE"
+	) ELSE (
+		SET "homeVBSMsg=Enable Visual Basic Script [VBS] (Legacy)"
+		SET "homeVBSLoc=VBS-ENABLE"
+	)
+
+REG QUERY "HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing 2>&1 | FINDSTR /R /X /C:".*EnableActiveProbing[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNCSIMsg=Disable NCSI Active Probing (Legacy)"
+		SET "homeNCSILoc=NCSI-DISABLE"
+	) ELSE (
+		SET "homeNCSIMsg=Enable NCSI Active Probing (Legacy)"
+		SET "homeNCSILoc=NCSI-ENABLE"
+	)
+
+SET "homeNVCPMsg=Write-Host '                 [9] Install NVIDIA Control Panel'"
+IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
+	SET "homeNVCPLoc=NVCP-UNINSTALL"
+	SET "homeNVCPMsg=Write-Host '                 [9] Uninstall NVIDIA Control Panel'"
+) ELSE (
+	SET "homeNVCPLoc=NVCP-INSTALL"
+	WMIC path win32_VideoController get name | FINDSTR "NVIDIA GeForce GTX RTX" > NUL 2>&1
+	IF ERRORLEVEL 1 (
+		CALL :MO-CHOICE -DelChoice 9
+		SET "homeNVCPMsg=Write-Host '                 [9] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [No NVIDIA GPU]' -ForegroundColor Red"
+	) ELSE (
+		SC query "NVDisplay.ContainerLocalSystem" > NUL 2>&1
+			IF ERRORLEVEL 1 (
+				CALL :MO-CHOICE -DelChoice 9
+				SET "homeNVCPMsg=Write-Host '                 [9] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [No NVIDIA Driver]' -ForegroundColor Red"
+			) ELSE (
+				IF EXIST "%SYSTEMDRIVE%\Program Files\WindowsApps" (
+					DIR /A:d /B "%SYSTEMDRIVE%\Program Files\WindowsApps" | FINDSTR /c:"NVIDIACorp.NVIDIAControlPanel" > NUL 2>&1
+						IF NOT ERRORLEVEL 1 (
+							FOR /F "usebackq delims=" %%A IN (`DIR /A:d /B "%SYSTEMDRIVE%\Program Files\WindowsApps" ^| FINDSTR /c:"NVIDIACorp.NVIDIAControlPanel"`) DO (
+								DIR /B "%SYSTEMDRIVE%\Program Files\WindowsApps\%%A" | FINDSTR /i /x /c:"nvcplui.exe" > NUL 2>&1
+									IF ERRORLEVEL 1 (
+										CURL store.rg-adguard.net 2>&1 | FINDSTR /I /c:"Cloudflare Ray ID" > NUL 2>&1
+											IF NOT ERRORLEVEL 1 CALL :MO-CHOICE -DelChoice 9 & SET "homeNVCPMsg=Write-Host '                 [9] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Server Unavailable]' -ForegroundColor Red"
+									)
+							)
+						) ELSE (
+							CURL store.rg-adguard.net 2>&1 | FINDSTR /I /c:"Cloudflare Ray ID" > NUL 2>&1
+								IF NOT ERRORLEVEL 1 CALL :MO-CHOICE -DelChoice 9 & SET "homeNVCPMsg=Write-Host '                 [9] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Server Unavailable]' -ForegroundColor Red"
+						)
+				)
+			)
+	)
+)
+CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		CALL :MO-CHOICE -DelChoice 1
+		SET "homeExtWSLMsg=""" -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red -NoNewLine; Write-Host """"
+	) ELSE (
+		SET "homeExtWSLMsg="
+	)
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-LANGUAGE
+
+REM NULL
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-WSL
+
+
+SET "wslUnattend="
+SET "homeWSLChPos=16"
+SET "homeWSLStatus=`n"
+
+DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
+	IF %ERRORLEVEL% NEQ 0 (
+		SET "homeWSLMsg=Enable WSL"
+		SET "homeWSLLoc=WSL-ENABLE"
+	) ELSE (
+		SET "homeWSLMsg=Disable WSL"
+		SET "homeWSLLoc=WSL-DISABLE"
+		WHERE WSL.exe > NUL 2>&1
+			IF ERRORLEVEL 1 (
+				SET "homeWSLStatus=""""; Write-Host """"`n$(' '.padleft('18', ' '))A restart is required for WSL functionality."""" -ForegroundColor Red -NoNewLine; Write-Host """""
+				SET "homeWSLChPos=17"
+			)
+	)
+
+WHERE WSL.exe > NUL 2>&1
+	IF %ERRORLEVEL% NEQ 0 (
+		CALL :MO-CHOICE -DelChoice 2
+		CALL :MO-CHOICE -DelChoice 3
+		SET "homeWSLDistroMsgs=""""; Write-Host """"$(' '.padleft('17', ' '))[2] Install WSL Distro`n$(' '.padleft('17', ' '))[3] Remove WSL Distro`n"""" -ForegroundColor DarkGray; Write-Host """"$(' '.padleft('17', ' '))[U] Unattended Distro Install [Disabled]"""" -NoNewLine; Write-Host """" "
+	) ELSE (
+		CALL :MO-CHOICE -DelChoice U
+		SET "homeWSLDistroMsgs=`n$(' '.padleft('17', ' '))[2] Install WSL Distro`n$(' '.padleft('17', ' '))[3] Remove WSL Distro`n"
+	)
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-LIMMAINMENU
+
+CALL :AUX-ELEVATIONCHECK
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeElevMsg=De-elevate User"
+	) ELSE (
+		SET "homeElevMsg=Elevate User to Administrator"
+	)
+
+REG QUERY "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v dontdisplaylastusername 2>&1 | FINDSTR /R /X /C:".*dontdisplaylastusername[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNUMsg=Disable Username Login Requirement"
+	) ELSE (
+		SET "homeNUMsg=Enable Username Login Requirement"
+	)
+
+REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "DefaultUsername" 2>&1 | FINDSTR /c:"%currentUsername%" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		REG QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v "AutoAdminLogon" 2>&1 | FINDSTR /R /X /C:".*AutoAdminLogon[ ].*REG_SZ.*[ ]1" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 (
+				SET "homeALMsg=Disable AutoLogon"
+			) ELSE (
+				SET "homeALMsg=Enable AutoLogon"
+			)
+	) ELSE (
+		SET "homeALMsg=Enable AutoLogon"
+	)
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-LIMEXTRA
+
+REG QUERY "HKU\%userSID%\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled 2>&1 | FINDSTR /R /X /C:".*ToastEnabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNOTIFMsg=Disable Desktop Notifications"
+		SET "homeNOTIFLoc=NOTIF-DISABLE"
+	) ELSE (
+		SET "homeNOTIFMsg=Enable Desktop Notifications"
+		SET "homeNOTIFLoc=NOTIF-ENABLE"
+	)
+
+REG QUERY "HKU\%userSID%\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter 2>&1| FINDSTR /R /X /C:".*DisableNotificationCenter[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNOTIFCENMsg=Enable Notification Center"
+	) ELSE (
+		SET "homeNOTIFCENMsg=Disable Notification Center"
+	)
+
+REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled 2>&1 | FINDSTR /R /X /C:".*HibernateEnabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HiberFileType 2>&1 | FINDSTR /R /X /C:".*HiberFileType[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 (
+				SET "homeHIBMsg=Disable Hibernation"
+			) ELSE (
+				SET "homeHIBMsg=Enable Hibernation"
+			)
+	) ELSE (
+		SET "homeHIBMsg=Enable Hibernation"
+	)
+
+REG QUERY "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		REG QUERY "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+			IF ERRORLEVEL 1 (
+				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy)"
+			) ELSE (
+				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy)"
+
+			)
+	) ELSE (
+		REG QUERY "HKEY_USERS\%userSID%\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled 2>&1 | FINDSTR /R /X /C:".*Enabled[ ].*REG_DWORD[ ].*0x0" > NUL 2>&1
+			IF NOT ERRORLEVEL 1 (
+				SET "homeWSHMsg=Enable Windows Script Host [WSH] (Legacy)"
+			) ELSE (
+				SET "homeWSHMsg=Disable Windows Script Host [WSH] (Legacy)"
+			)
+	)
+
+ASSOC .vbs 2>&1| FINDSTR /I /X /c:".vbs=VBSFile" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeVBSMsg=Disable Visual Basic Script [VBS] (Legacy)"
+		SET "homeVBSLoc=VBS-DISABLE"
+	) ELSE (
+		SET "homeVBSMsg=Enable Visual Basic Script [VBS] (Legacy)"
+		SET "homeVBSLoc=VBS-ENABLE"
+	)
+
+REG QUERY "HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing 2>&1 | FINDSTR /R /X /C:".*EnableActiveProbing[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeNCSIMsg=Disable NCSI Active Probing (Legacy)"
+	) ELSE (
+		SET "homeNCSIMsg=Enable NCSI Active Probing (Legacy)"
+	)
+
+SET "homeNVCPMsg=Write-Host '                 [9] Install NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red"
+IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
+	SET "homeNVCPMsg=Write-Host '                 [9] Uninstall NVIDIA Control Panel' -NoNewLine -ForegroundColor DarkGray; Write-Host ' [Admin Required]' -ForegroundColor Red"
+)
+
+CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 0 (
+		SET "homeExtWSLMsg= -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red"
+	) ELSE (
+		SET "homeExtWSLMsg="
+	)
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-LIMLANGUAGE
+
+REM NULL
+EXIT /B 0
+REM -----------------------------------------------------------
+
+
+
+REM -----------------------------------------------------------
+:MO-LIMWSL
+
+WHERE WSL.exe > NUL 2>&1
+	IF %ERRORLEVEL% NEQ 0 (
+		SET "homeWSLMsg=Enable WSL"
+	) ELSE (
+		SET "homeWSLMsg=Disable WSL"
+	)
+
+SET "homeLIMWSLCh=230X"
+
+WHERE WSL.exe > NUL 2>&1
+	IF %ERRORLEVEL% NEQ 0 (
+		CALL :MO-CHOICE -DelChoice 2
+		CALL :MO-CHOICE -DelChoice 3
+		SET "homeWSLDistroMsgs=$(' '.padleft(17, ' '))[2] Install WSL Distro`n$(' '.padleft(17, ' '))[3] Remove WSL Distro`n`n$(' '.padleft(17, ' '))[U] Unattended Distro Install"""" -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Admin Required]' -ForegroundColor Red -NoNewLine; Write-Host """""
+	) ELSE (
+		SET "homeWSLDistroMsgs=$(' '.padleft(17, ' '))[2] Install WSL Distro`n$(' '.padleft(17, ' '))[3] Remove WSL Distro`n"
+	)
+EXIT /B 0
+REM -----------------------------------------------------------
+:MO-CHOICE
+
+IF "%~1"=="-InitChoices" CALL :INTERNAL-MO_CHOICE-InitChoices "%~2" "%~3"
+IF "%~1"=="-DelChoice" CALL :INTERNAL-MO_CHOICE-DelChoice "%~2"
+IF "%~1"=="-StartChoices" CALL :INTERNAL-MO_CHOICE-StartChoices "%~2"
+
+EXIT /B 0
+:INTERNAL-MO_CHOICE-InitChoices
+
+SET "moChoices=%~1"
+FOR /F "usebackq tokens=2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 delims=+" %%A IN (`ECHO "%~2"`) DO SET "MOCHI1=%%A" & SET "MOCHI2=%%B" & SET "MOCHI3=%%C" & SET "MOCHI4=%%D" & SET "MOCHI5=%%E" & SET "MOCHI6=%%F" & SET "MOCHI7=%%G" & SET "MOCHI8=%%H" & SET "MOCHI9=%%I" & SET "MOCHI10=%%J" & SET "MOCHI11=%%K" & SET "MOCHI12=%%L" & SET "MOCHI13=%%M" & SET "MOCHI14=%%N" & SET "MOCHI15=%%O" & SET "MOCHI16=%%P"
+
+EXIT /B 0
+
+:INTERNAL-MO_CHOICE-DelChoice
+
+FOR /F "usebackq tokens=1,2 delims=%~1" %%A IN (`ECHO %moChoices%`) DO (
+	SET "moChoices=%%A%%B"
+	IF NOT "%%B"=="" (
+		CALL :AUX-LENGTHFETCH "%%A:"
+	) ELSE (
+		IF "%moChoices:~0,1%"=="%~1" (
+			SET "chRemove=1"
+		) ELSE (
+			CALL :AUX-LENGTHFETCH "%%A:"
+		)
+	)
+)
+IF NOT "%chRemove%"=="1" SET "chRemove=%lenOut%"
+
+SET /A "chShift=%chRemove%+1"
+CALL SET "MOCHI%chRemove%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+SET /A "chShift=%chShiftAlt%+1"
+CALL SET "MOCHI%chShiftAlt%=%%MOCHI%chShift%%%"
+SET /A "chShiftAlt=%chShift%+1"
+CALL SET "MOCHI%chShift%=%%MOCHI%chShiftAlt%%%"
+
+EXIT /B 0
+
+:INTERNAL-MO_CHOICE-StartChoices
+
+SETLOCAL ENABLEDELAYEDEXPANSION
+POWERSHELL -NoP -C "Write-Host """"%~1`n$(' '.padleft(11, ' '))__________________________________________________________`n`n$(' '.padleft(11, ' '))Choose a menu option: """" -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C %moChoices% /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+CALL SET "moChoice=%%MOCHI%ERRORLEVEL%%%"
+SET "moChoice=%moChoice:|=^|%"
+
+ENDLOCAL & (GOTO) 2>NUL & (GOTO) 2>NUL & %moChoice:""="%
+REM -----------------------------------------------------------
+
+
 					REM ----------------
 					REM Script Functions
 					REM ----------------
@@ -2494,25 +2629,25 @@ IF "%cenOut%"=="" (
 	SET "returnMsg=Write-Host """`n"""; Write-Host '%returnOutComm%'%errorColor%; Write-Host '%cenOut%'%errorColor%; Write-Host """           __________________________________________________________`n"""; "
 )
 
-IF /I "%~3"=="-R" (
-	POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to restart now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-		IF ERRORLEVEL 2 SHUTDOWN -R -T 0 & EXIT 0
+IF /I "%~d3"=="R:" (
+	POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to $^('%~x3'.replace^('.'^, ''^).replace('-',' '^)^) now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+		IF ERRORLEVEL 2 SHUTDOWN -%~n3 & EXIT 0
 ) ELSE (
-	IF /I "%~4"=="-R" (
-		POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to restart now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-			IF ERRORLEVEL 2 SHUTDOWN -R -T 0 & EXIT 0
+	IF /I "%~d4"=="R:" (
+		POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to $^('%~x4'.replace^('.'^, ''^).replace('-',' '^)^) now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+			IF ERRORLEVEL 2 SHUTDOWN -%~n4 & EXIT 0
 	) ELSE (
-		IF /I "%~5"=="-R" (
-			POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to restart now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-				IF ERRORLEVEL 2 SHUTDOWN -R -T 0 & EXIT 0
+		IF /I "%~d5"=="R:" (
+			POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to $^('%~x5'.replace^('.'^, ''^).replace('-',' '^)^) now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+				IF ERRORLEVEL 2 SHUTDOWN -%~n5 & EXIT 0
 		) ELSE (
-			IF /I "%~6"=="-R" (
-				POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to restart now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-					IF ERRORLEVEL 2 SHUTDOWN -R -T 0 & EXIT 0
+			IF /I "%~d6"=="R:" (
+				POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to $^('%~x6'.replace^('.'^, ''^).replace('-',' '^)^) now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+					IF ERRORLEVEL 2 SHUTDOWN -%~n6 & EXIT 0
 			) ELSE (
-				IF /I "%~7"=="-R" (
-					POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to restart now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
-						IF ERRORLEVEL 2 SHUTDOWN -R -T 0 & EXIT 0
+				IF /I "%~d7"=="R:" (
+					POWERSHELL -NoP -C "%returnMsg%Write-Host """           Would you like to $^('%~x7'.replace^('.'^, ''^).replace('-',' '^)^) now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C NY /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
+						IF ERRORLEVEL 2 SHUTDOWN -%~n7 & EXIT 0
 				) ELSE (
 					POWERSHELL -NoP -C "%returnMsg%Write-Host -NoNewLine '           Press any key to return to the Menu: '; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown'); [Console]::CursorVisible = $False"
 				)
@@ -3403,7 +3538,7 @@ FINDSTR "1 2 3 4 5 6 7 8 9 0" "%userTemp%\[amecs]-DistroPID%rndOut%.txt" > NUL 2
 
 FINDSTR /X /c:"AME-ERROR" "%userTemp%\[amecs]-WSLCom%rndOut%.txt">NUL 2>&1 && SET /A "count2=%count2%+500"
 FINDSTR /X /c:"AME-INPUTREQ" "%userTemp%\[amecs]-WSLCom%rndOut%.txt">NUL 2>&1 && GOTO ALTPARENT-WSL-CONFIG
-TASKLIST /FI "IMAGENAME eq cmd.exe" /FI "PID eq %altRunPID%" 2>&1 | FINDSTR /i /c:"ERROR:" /c:"INFO: No tasks are running">NUL 2>&1 && SET /A "count1=%count1%+70"
+TASKLIST /FI "IMAGENAME eq cmd.exe" /FI "PID eq %altRunPID%" 2>&1 | FINDSTR /i /c:"cmd.exe">NUL 2>&1 || SET /A "count1=%count1%+70"
 TIMEOUT /T 2 /NOBREAK > NUL 2>&1
 SET /A "count1=%count2%+1"
 GOTO ALTPARENT-WSL-DISTROPROGRESS
@@ -3514,7 +3649,7 @@ POWERSHELL -NoP -C "[console]::OutputEncoding = [Text.UnicodeEncoding]::Unicode;
 		GOTO ALTCHILD-WSL-CONFIG
 	)
 
-TASKLIST /FI "IMAGENAME eq cmd.exe" /FI "PID eq %distroHostPID%" 2>&1 | FINDSTR /i /c:"ERROR:" /c:"INFO: No tasks are running">NUL 2>&1 && SET /A "count1=%count1%+50"
+TASKLIST /FI "IMAGENAME eq cmd.exe" /FI "PID eq %distroHostPID%" 2>&1 | FINDSTR /i /c:"cmd.exe">NUL 2>&1 || SET /A "count1=%count1%+50"
 
 SET /A "count1=%count1%+1"
 GOTO ALTCHILD-WSL-DISTROPROGRESS
