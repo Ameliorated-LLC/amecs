@@ -62,7 +62,7 @@ Or the following for de-elevating the user:
 
 This function allows for changing the user's display language.
 
-Firstly, it prompts the user to download a portion of a ~5.5GB language pack ISO file. Unfortunately, Microsoft no longer publicly distributes individual language pack files, so this is necessary.
+Firstly, it prompts the user to download a portion of a \~5.5GB language pack ISO file. Unfortunately, Microsoft no longer publicly distributes individual language pack files, so this is necessary.
 
 Once the ISO is downloaded, it extracts the ISO file, and installs the language pack for the selected display language using the following commands:
 
@@ -166,18 +166,42 @@ Or the following for disabling hibernation:
 
     powercfg /HIBERNATE OFF
 
+#### Notification Center
+
+This function allows for enabling or disabling the Notification Center in the bottom right of the taskbar.
+
+At its core, it uses the following command:
+
+    reg add "HKU\<User's SID>\Software\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 0 /f
+
+Or the following for disabling the Notification Center:
+
+    reg add "HKU\<User's SID>\Software\Policies\Microsoft\Windows\Explorer" /v DisableNotificationCenter /t REG_DWORD /d 1 /f
+
+#### Desktop Notifications
+
+This function allows for enabling or disabling desktop toast notifications.
+
+At its core, it uses the following command:
+
+    reg add "HKU\<User's SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 1 /f
+
+Or the following for disabling desktop notifications:
+
+    reg add "HKU\<User's SID>\SOFTWARE\Microsoft\Windows\CurrentVersion\PushNotifications" /v ToastEnabled /t REG_DWORD /d 0 /f
+
 #### Windows Script Host (Legacy)
 
 This function allows for enabling or disabling Windows Script Host (WSH). WSH is necessary for some programs.
 
 At its core, the following commands are used:
 
-    reg add "HKEY_USERS\<User's SID>\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f
+    reg add "HKU\<User's SID>\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f
     reg add "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 1 /f
 
 Or the following for disabling WSH:
 
-    reg add "HKEY_USERS\<User's SID>\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f
+    reg add "HKU\<User's SID>\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f
     reg add "HKLM\SOFTWARE\Microsoft\Windows Script Host\Settings" /v Enabled /t REG_DWORD /d 0 /f
 
 #### Visual Basic Script (Legacy)
