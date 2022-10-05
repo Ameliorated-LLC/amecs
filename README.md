@@ -14,6 +14,8 @@ Alternatively, you could clone the repository:
 
 Once cloned, simply run `amecs.cmd`.
 
+*Note: using **Download Repository** > **ZIP** will result in a faulty amecs script.*
+
 ## Primary Functions
 
 There are many actions in AME that require commands, the following functions essentially work as an interactive user interface for those.
