@@ -128,7 +128,7 @@ REM DB-SubCorresponding Input Methods
 :: |AZE| |042c:0001042c| |042c:0000082c| |042c:0000042c|
 :: |BEL| |080c:0001080c| |080c:00000813| |080c:0000080c|
 :: |BAN| |0445:00000445| |0445:00020445| |0445:00010445|
-:: |BUL| |042b:0003042b| |042b:0001042b| |042b:0002042b| |042b:0004042b| |042b:0000042b|
+:: |BUL| |0402:00030402| |0402:00010402| |0402:00020402| |0402:00040402| |0402:00000402|
 :: |CAN| |0c0c:00001009| |0c0c:00000c0c| |0c0c:00011009|
 :: |CHE| |045c:0000045c| |045c:0001045c|
 :: |CHI| |0804:{81D4E9C9-1D3B-41BC-9E6C-4B40BF79E35E}{FA550B04-5AD7-411f-A5AC-CA038EC515D7}| |0404:{B115690A-EA02-48D5-A231-E3578D2FDF80}{B2F9C502-1742-11D4-9790-0080C882687E}| |0404:00000c04| |0404:00001404| |0404:00001004|
@@ -188,7 +188,7 @@ IF NOT "%~1"=="-debug" (
 )
 COLOR 70
 TITLE Central AME Script
-SET "ver=v1.2"
+SET "ver=v1.3"
 IF "%~1"=="permsCheck" EXIT 0
 
 REM Allows for more flexibility with these two variables
@@ -211,7 +211,7 @@ POWERSHELL -NoP -C "[Console]::CursorVisible = $False"
 CALL :AUX-GENRND "7"
 FOR /F "usebackq tokens=1 delims= " %%A IN (`WMIC process where "name='cmd.exe' and CommandLine like '%%%rndOut%%%'" get ParentProcessId 2^>^&1 ^| FINDSTR "1 2 3 4 5 6 7 8 9 0"`) DO SET "scriptPID=%%A"
 	IF "%scriptPID%"=="" (
-		CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
+		CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
 		POWERSHELL -NoP -C "Write-Host """`n`n`n                       Failed to fetch script process ID.`n           __________________________________________________________`n`n           Press any key to Exit: """ -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"
 		EXIT /B 0
 	)
@@ -234,13 +234,13 @@ NET SESSION > NUL 2>&1
 IF /I "%~1"=="wslUnattend" SET "wslDistro=%~2" & SET "wslGroups=%~3" & SET "wslUnattendRun=true" & GOTO WSL-DISTROINSTALL
 
 IF "%userRestart%"=="true" (
-	CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
+	CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
 	POWERSHELL -NoP -C "Write-Host """`n`n`n                   Running this script after a username change`n                     may cause serious damage! Run anyways?`n                                    [Y]   [N]`n           __________________________________________________________`n`n           Choose an option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 		IF ERRORLEVEL 2 EXIT /B 0
 )
 
-WMIC process where "name='cmd.exe' and ProcessId!='%scriptPID%' or name='WindowsTerminal.exe' and ProcessId!='%scriptPID%'" get name 2>&1 | FINDSTR /c:"No Instance(s) Available." > NUL 2>&1
-	IF %ERRORLEVEL% EQU 0 (
+WMIC process where "name='cmd.exe' and ProcessId!='%scriptPID%' or name='WindowsTerminal.exe' and ProcessId!='%scriptPID%'" get name 2>&1 | FINDSTR /i /c:"cmd.exe" /c:"WindowsTerminal.exe" > NUL 2>&1
+	IF %ERRORLEVEL% EQU 1 (
 		DEL /Q /F "%TEMP%\[amecs]*" > NUL 2>&1
 		DEL /Q /F "%userTemp%\[amecs]*" > NUL 2>&1
 	)
@@ -254,11 +254,11 @@ IF /I "%~1"=="wslUnattend" SET "wslDistro=%~2" & SET "wslGroups=%~3" & SET "wslU
 POWERSHELL -NoP -C "Start-Process '%scriptPath:'=''%' -Verb RunAs" > NUL 2>&1
 IF %ERRORLEVEL% GTR 0 (
 	IF "%altRun%"=="true" (
-		CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
+		CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
 		POWERSHELL -NoP -C "Write-Host """`n`n`n                     Script must be run as the current user`n                        or with administrator privilages.`n           __________________________________________________________`n`n           Press any key to Exit: """ -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"
 		EXIT /B 0
 	)
-	CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
+	CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
 	POWERSHELL -NoP -C "Write-Host """`n`n`n               Elevation canceled, run with limited functionality?`n                                    [Y]   [N]`n           __________________________________________________________`n`n           Choose an option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 		IF ERRORLEVEL 2 (
 			EXIT /B 0
@@ -296,7 +296,7 @@ IF "%adminPrivs%"=="false" GOTO HOME-LIMEXTRA
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & ECHO.
 
-CALL :MO-CHOICE -InitChoices "1234567890X" "+GOTO HOME-WSL+GOTO !homeHIBLoc!+GOTO !homeNOTIFCENLoc!+GOTO !homeNOTIFLoc!+GOTO !homeWSHLoc!+GOTO !homeVBSLoc!+GOTO !homeNCSILoc!+CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            | Central AME Script %ver% | & POWERSHELL -NoP -C ""Write-Host """"""""`n`n`n$(' '.padleft(13, ' '))WARNING: This is a beta feature, use at your own risk.`n$(' '.padleft(11, ' '))__________________________________________________________`n`n$(' '.padleft(11, ' '))Press any key to continue: """""""" -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"" & GOTO NEWUSER-MENU+GOTO !homeNVCPLoc!+GOTO HOME-MAINMENU+EXIT /B 0+"
+CALL :MO-CHOICE -InitChoices "1234567890X" "+GOTO HOME-WSL+GOTO !homeHIBLoc!+GOTO !homeNOTIFCENLoc!+GOTO !homeNOTIFLoc!+GOTO !homeWSHLoc!+GOTO !homeVBSLoc!+GOTO !homeNCSILoc!+CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            | Central AME Script %ver% | & POWERSHELL -NoP -C ""Write-Host """"""""`n`n`n$(' '.padleft(13, ' '))WARNING: This is a beta feature, use at your own risk.`n$(' '.padleft(11, ' '))__________________________________________________________`n`n$(' '.padleft(11, ' '))Press any key to continue: """""""" -NoNewLine; [Console]::CursorVisible = $True; $NULL = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown')"" & GOTO NEWUSER-MENU+GOTO !homeNVCPLoc!+GOTO HOME-MAINMENU+EXIT /B 0+"
 CALL :MO-EXTRA
 CALL :MO-CHOICE -StartChoices "$(' '.padleft(17, ' '))[1] Manage WSL%homeExtWSLMsg%`n$(' '.padleft(17, ' '))[2] %homeHIBMsg%`n$(' '.padleft(17, ' '))[3] %homeNOTIFCENMsg%`n$(' '.padleft(17, ' '))[4] %homeNOTIFMsg%`n$(' '.padleft(17, ' '))[5] %homeWSHMsg%`n$(' '.padleft(17, ' '))[6] %homeVBSMsg%`n$(' '.padleft(17, ' '))[7] %homeNCSIMsg%`n$(' '.padleft(17, ' '))[8] Create New User (Beta)""""; %homeNVCPMsg%; Write-Host """"`n$(' '.padleft(17, ' '))[0] Return to Menu`n$(' '.padleft(17, ' '))[X] Exit`n"
 
@@ -655,7 +655,7 @@ IF "%lpStatus%"=="removed" GOTO DISPLANG-LPREMOVE
 CALL :AUX-GENRND "7"
 
 REM Check if language pack is already installed
-DISM /Online /Get-Intl /English | FIND "Installed language(s): %langSel%" > NUL 2>&1
+DISM /Online /Get-Intl /English | FINDSTR /I /R /c:"Installed language(s):.* %langSel%" /c:"Fallback Languages.* %langSel%[^ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789]*" > NUL 2>&1
 	IF %ERRORLEVEL% LEQ 0 GOTO DISPLANG-USERCHECK
 
 SET "ZIPLoc=7z.exe"
@@ -1209,17 +1209,17 @@ SETLOCAL
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
 
-DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | FINDSTR /I /c:"State : Enabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /I /c:"State : Enabled" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
 		WHERE wsl.exe > NUL 2>&1
 			IF NOT ERRORLEVEL 1 CALL :AUX-RETURN "WSL is already enabled." "HOME-WSL" -E
 	)
 
 ECHO. & ECHO                                  Enabling WSL...
-DISM /Online /Enable-Feature /FeatureName:Microsoft-Windows-Subsystem-Linux -NoRestart | FINDSTR /I /c:"Error"
+DISM /Online /Enable-Feature /FeatureName:Microsoft-Windows-Subsystem-Linux -NoRestart /English | FINDSTR /I /c:"Error"
 	IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Failed to enable WSL. (1)" "HOME-WSL" -E
 
-DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | FINDSTR /I /c:"State : Disabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /I /c:"State : Disabled" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Failed to enable WSL. (2)" "HOME-WSL" -E
 
 WHERE wsl.exe > NUL 2>&1
@@ -1233,16 +1233,16 @@ SETLOCAL
 
 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO.
 
-DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | FINDSTR /I /c:"State : Disabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /I /c:"State : Disabled" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
 		WHERE wsl.exe > NUL 2>&1
 			IF NOT ERRORLEVEL 1 CALL :AUX-RETURN "WSL is already disabled." "HOME-WSL" -E
 	)
 ECHO. & ECHO                                 Disabling WSL...
-DISM /Online /Disable-Feature /FeatureName:Microsoft-Windows-Subsystem-Linux -NoRestart | FINDSTR /I /c:"Error"
+DISM /Online /Disable-Feature /FeatureName:Microsoft-Windows-Subsystem-Linux -NoRestart /English | FINDSTR /I /c:"Error"
 	IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Failed to disable WSL. (1)" "HOME-WSL" -E
 
-DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | FINDSTR /I /c:"State : Enabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /I /c:"State : Enabled" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Failed to disable WSL. (2)" "HOME-WSL" -E
 
 WHERE wsl.exe > NUL 2>&1
@@ -1360,7 +1360,7 @@ IF "%wslUnattend%"=="true" GOTO :WSL-DISTROUNATTEND
 CALL :AUX-GENRND "7"
 
 IF NOT "%adminPrivs%"=="false" (
-	DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
+	DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
 		IF ERRORLEVEL 1 (
 			POWERSHELL -NoP -C "Write-Host """`n`n                                WSL is disabled.""" -ForegroundColor Red; Write-Host """           __________________________________________________________`n`n           Would you like to enable it now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 				IF ERRORLEVEL 2 ENDLOCAL & GOTO HOME-WSL
@@ -1605,15 +1605,15 @@ IF NOT "%userPassword%"=="" (
 
 IF %inpLenOut% GEQ 11 CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^| & ECHO. & SET /A "inpLenOut=0"
 
-DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | FINDSTR /I /c:"State : Enabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /I /c:"State : Enabled" > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		ECHO. & ECHO                                  Enabling WSL...
 		SET /A "inpLenOut=%inpLenOut%+2"
 
-		DISM /Online /Enable-Feature /FeatureName:Microsoft-Windows-Subsystem-Linux -NoRestart | FINDSTR /I /c:"Error"
+		DISM /Online /Enable-Feature /FeatureName:Microsoft-Windows-Subsystem-Linux -NoRestart /English | FINDSTR /I /c:"Error"
 			IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Failed to enable WSL. (1)" "HOME-WSL" -E
 
-		DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux | FINDSTR /I /c:"State : Disabled" > NUL 2>&1
+		DISM /Online /Get-FeatureInfo /FeatureName:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /I /c:"State : Disabled" > NUL 2>&1
 			IF %ERRORLEVEL% EQU 0 CALL :AUX-RETURN "Failed to enable WSL. (2)" "HOME-WSL" -E
 )
 
@@ -2266,7 +2266,7 @@ IF EXIST "%SYSTEMDRIVE%\Program Files\NVIDIA Control Panel\nvcplui.exe" (
 CMD /C WSL --help 2>&1 | FINDSTR /I /R /c:"-.-.i.n.s.t.a.l.l.*<.O.p.t.i.o.n.s.>" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
 		CALL :MO-CHOICE -DelChoice 1
-		SET "homeExtWSLMsg=""" -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red -NoNewLine; Write-Host """"
+		SET "homeExtWSLMsg="""" -ForegroundColor DarkGray -NoNewLine; Write-Host ' [Not Supported]' -ForegroundColor Red -NoNewLine; Write-Host """""
 	) ELSE (
 		SET "homeExtWSLMsg="
 	)
@@ -2292,7 +2292,7 @@ SET "wslUnattend="
 SET "homeWSLChPos=16"
 SET "homeWSLStatus=`n"
 
-DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 		SET "homeWSLMsg=Enable WSL"
 		SET "homeWSLLoc=WSL-ENABLE"
@@ -2661,7 +2661,7 @@ IF "%wslUnattendRun%"=="true" (
 	IF "%adminPrivs%"=="false" (
 		POWERSHELL -NoP -C "Start-Process '%scriptPath:'=''%' -Verb RunAs" > NUL 2>&1
 			IF ERRORLEVEL 1 (
-				CLS & ECHO. & ECHO           __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
+				CLS & ECHO. & ECHO            __________________________________________________________ & ECHO. & ECHO                            ^| Central AME Script %ver% ^|
 				POWERSHELL -NoP -C "Write-Host """`n`n`n               Elevation canceled, run with limited functionality?`n                                    [Y]   [N]`n           __________________________________________________________`n`n           Choose an option: """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 					IF ERRORLEVEL 2 (
 						EXIT 0
@@ -3395,7 +3395,7 @@ CLS & ECHO. & ECHO            __________________________________________________
 
 IF "%wslUnattend%"=="true" GOTO :WSL-DISTROUNATTEND
 
-DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
+DISM /Online /Get-FeatureInfo:Microsoft-Windows-Subsystem-Linux /English | FINDSTR /x /c:"State : Enabled" > NUL 2>&1
 	IF %ERRORLEVEL% NEQ 0 (
 			POWERSHELL -NoP -C "Write-Host """`n`n                                WSL is disabled.""" -ForegroundColor Red; Write-Host """           __________________________________________________________`n`n           Would you like to enable it now? ^(Y/N^): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 			IF ERRORLEVEL 2 ENDLOCAL & GOTO HOME-WSL
