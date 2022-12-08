@@ -6,8 +6,6 @@ Script for automating a large assortment of AME related actions.
 
 ## Usage
 
-*Note: using **Download Repository** > **ZIP** will result in a faulty amecs script.*
-
 You can download the script by going to the [latest release](https://git.ameliorated.info/Joe/amecs/releases/latest) and selecting `amecs.zip` from the **Downloads** section. Once downloaded, simply extract `amecs.zip` and run `amecs.cmd`.
 
 Alternatively, you could clone the repository:
