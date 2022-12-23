@@ -188,7 +188,7 @@ IF NOT "%~1"=="-debug" (
 )
 COLOR 70
 TITLE Central AME Script
-SET "ver=v1.3"
+SET "ver=v1.4"
 IF "%~1"=="permsCheck" EXIT 0
 
 REM Allows for more flexibility with these two variables
@@ -438,7 +438,7 @@ FOR /F "usebackq delims=" %%I in (`POWERSHELL -NoP -C "Start-Sleep -Milliseconds
 
 POWERSHELL -NoP -C "Write-Host """`n           Remove lockscreen blur? (Y/N): """ -NoNewLine; [Console]::CursorVisible = $True; CHOICE /C YN /N /M '%BS%'; [Console]::CursorVisible = $False; EXIT $LastExitCode"
 	IF %ERRORLEVEL%==1 REG ADD "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v DisableAcrylicBackgroundOnLogon /t REG_DWORD /d 1 /f > NUL
-	IF %ERRORLEVEL%==2 REG DELETE "HKLM\SOFTWARE\Policies\Microsoft\Windows" /v DisableAcrylicBackgroundOnLogon /f > NUL 2>&1
+	IF %ERRORLEVEL%==2 REG DELETE "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v DisableAcrylicBackgroundOnLogon /f > NUL 2>&1
 
 :LOCKSCREEN-DEPLOY
 
@@ -2175,7 +2175,7 @@ REG QUERY "HKU\%userSID%\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v Disabl
 
 REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HibernateEnabled 2>&1 | FINDSTR /R /X /C:".*HibernateEnabled[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
 	IF %ERRORLEVEL% EQU 0 (
-		REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HiberFileType 2>&1 | FINDSTR /R /X /C:".*HiberFileType[ ].*REG_DWORD[ ].*0x1" > NUL 2>&1
+		REG QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v HiberFileType 2>&1 | FINDSTR /R /X /C:".*HiberFileType[ ].*REG_DWORD[ ].*0x2" > NUL 2>&1
 			IF NOT ERRORLEVEL 1 (
 				SET "homeHIBMsg=Disable Hibernation"
 				SET "homeHIBLoc=HIBERNATE-DISABLE"
@@ -3020,7 +3020,7 @@ PING -n 1 git.ameliorated.info -w 20000 > NUL 2>&1
 		EXIT /B 5
 	)
 
-FOR /F "usebackq tokens=2,4,6,8,10 delims=|" %%A IN (`POWERSHELL -NoP -C "$ProgressPreference = 'SilentlyContinue'; (Invoke-WebRequest https://git.ameliorated.info/Joe/central-ame-script/src/branch/master/links.txt -UseBasicParsing | Select-Object -Property Content).Content" ^| FINDSTR /i /c:"%name% ="`) DO (
+FOR /F "usebackq tokens=2,4,6,8,10 delims=|" %%A IN (`POWERSHELL -NoP -C "$ProgressPreference = 'SilentlyContinue'; (Invoke-WebRequest https://git.ameliorated.info/Styris/amecs/src/branch/master/links.txt -UseBasicParsing | Select-Object -Property Content).Content" ^| FINDSTR /i /c:"%name% ="`) DO (
 	SET "link=%%~A"
 	SET "arg=%%~B"
 	IF NOT "%%~C"=="" (
