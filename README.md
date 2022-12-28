@@ -10,7 +10,7 @@ You can download the script by going to the [latest release](https://git.amelior
 
 Alternatively, you could clone the repository:
 
-    git clone https://git.ameliorated.info/Joe/amecs.git
+    git clone https://git.ameliorated.info/Styris/amecs.git
 
 Once cloned, simply run `amecs.cmd`.
 
