@@ -14,9 +14,15 @@ Alternatively, you could clone the repository:
 
 Once cloned, simply run `amecs.cmd`.
 
+## Summary
+
+As part of the amelioration process, certain UI elements, such as the Region and language page in Windows Settings, have been removed, and require alternative ways to execute the tasks. We recommend using amecs, a script for automating a large variety of customization tasks.
+
+If you prefer manually executing commands for some of these tasks without a script, you can go through the step-by-step guides on [AME Guides](https://t.me/AMEGuides).
+
 ## Primary Functions
 
-There are many actions in AME that require commands, the following functions essentially work as an interactive user interface for those.
+There are a variety of tasks you can easily perform with amecs. Below, we provide an explanation for each of them, as well as the commands underlying the features.
 
 #### Username/Password
 
