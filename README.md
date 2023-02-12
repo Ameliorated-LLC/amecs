@@ -16,7 +16,7 @@ Once cloned, simply run `amecs.cmd`.
 
 ## Summary
 
-As part of the amelioration process, certain UI elements, such as the Region and language page in Windows Settings, have been removed, and require alternative ways to execute the tasks. We recommend using amecs, a script for automating a large variety of customization tasks.
+As part of the amelioration process, certain UI elements, such as the **Region and language** page in Windows Settings, have been removed, and require alternative ways to execute the tasks. We recommend using amecs, a script for automating a large variety of customization tasks.
 
 If you prefer manually executing commands for some of these tasks without a script, you can go through the step-by-step guides on [AME Guides](https://t.me/AMEGuides).
 
