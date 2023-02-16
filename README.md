@@ -234,7 +234,7 @@ Or the following for disabling NCSI Active Probing:
 
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\NlaSvc\Parameters\Internet" /v EnableActiveProbing /t REG_DWORD /d 0 /f
 
-#### New User
+#### New User (Beta)
 
 This function allows for creating partially functional and pre-configured users in Windows AME.
 
