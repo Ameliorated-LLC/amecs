@@ -6,7 +6,7 @@ Script for automating a large assortment of AME related actions.
 
 ## Usage
 
-You can download the script by going to the [latest release](https://git.ameliorated.info/Styris/amecs/releases/latest) and selecting `amecs.exe` from the **Downloads** section. Once downloaded, simply run `amecs.cmd`.
+You can download the script by going to the [latest release](https://git.ameliorated.info/Styris/amecs/releases/latest) and selecting `amecs.exe` from the **Downloads** section. Once downloaded, simply run `amecs.exe`.
 
 ## Summary
 
