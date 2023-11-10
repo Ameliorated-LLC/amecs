@@ -250,6 +250,17 @@ namespace amecs.Actions
                 var password = new InputPrompt() { MaskInput = true, Text = "\r\nEnter password for new user, or press\r\nescape to quit: " }.Start();
                 if (password == null)
                     return false;
+                
+                var passwordConfirmation = new InputPrompt() { MaskInput = true, Text = "\r\nRe-enter your password, or press\r\nescape to quit: " }.Start();
+                if (passwordConfirmation == null)
+                    return false;
+                
+                if (password != passwordConfirmation)
+                {
+                    ConsoleTUI.OpenFrame.WriteLine("The password re-entered does not match your original password.");
+                    Console.WriteLine();
+                    continue;
+                }
 
                 try
                 {
