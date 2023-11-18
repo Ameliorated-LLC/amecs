@@ -40,9 +40,9 @@ namespace amecs
 
         private const string Ver = "2.1";
         public static ConsoleTUI.Frame Frame;
-
-
-        public static async Task Main(string[] args)
+        [STAThread]
+        
+        public static void Main(string[] args)
         {
             ConsoleTUI.Initialize("Central AME Script");
 

@@ -52,18 +52,21 @@ namespace amecs.Actions
         {
             string letter;
             
-            var choice = new ChoicePrompt() { Text = "A Windows Setup ISO must be provided to install .NET 3.5.\r\nDo you have a Win USB/folder instead of an ISO? (Y/N): " }.Start();
+            var choice = new ChoicePrompt() { Text = "To install .NET 3.5, Windows installation media is needed.\r\nDo you have a Windows USB instead of an ISO? (Y/N): " }.Start();
             if (choice == null) return false;
             var usingFolder = choice == 0;
             if (usingFolder)
             {
                 var dlg = new FolderPicker();
                 dlg.InputPath = Globals.UserFolder;
-                if (dlg.ShowDialog(default, false) == false) return false;
+                if (!dlg.ShowDialog(IntPtr.Zero, false).GetValueOrDefault())
+                {
+                    Console.WriteLine();
+                    ConsoleTUI.OpenFrame.Close("\r\nYou must select a folder or drive.", new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
+                    return true;
+                }
                 if (CheckFileViolation(dlg.ResultPath)) return false;
                 letter = dlg.ResultPath;
-                Console.WriteLine(letter);
-                Console.ReadLine();
             }
             else
             {
@@ -74,7 +77,6 @@ namespace amecs.Actions
 
                 NativeWindow window = new NativeWindow();
                 window.AssignHandle(Process.GetCurrentProcess().MainWindowHandle);
-                Console.WriteLine("a");
                 if (dialog.ShowDialog(window) == DialogResult.OK)
                 {
                     if (CheckFileViolation(dialog.FileName)) return false;
@@ -156,7 +158,7 @@ namespace amecs.Actions
                     }
 
                     DismApi.Shutdown();
-                    if (usingFolder) DismountImage();
+                    if (!usingFolder) DismountImage();
                 }
             } catch (Exception e)
             {
@@ -165,7 +167,7 @@ namespace amecs.Actions
                     Thread.Sleep(50);
                 }
 
-                if (usingFolder)
+                if (!usingFolder)
                 {
                     try
                     {
@@ -188,6 +190,7 @@ namespace amecs.Actions
             
             Console.WriteLine();
             Console.WriteLine();
+            if (!usingFolder)
             ConsoleTUI.OpenFrame.Close(".NET 3.5 installed successfully", ConsoleColor.Green, Console.BackgroundColor, new ChoicePrompt()
             {
                 AnyKey = true,
