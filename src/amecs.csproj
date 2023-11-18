@@ -197,6 +197,7 @@
         <Compile Include="Ameliorated.ConsoleUtils\Extensions.cs" />
         <Compile Include="Ameliorated.ConsoleUtils\ParentProcess.cs" />
         <Compile Include="Ameliorated.ConsoleUtils\Payload.cs" />
+        <Compile Include="Misc.FolderPicker\FolderPicker.cs" />
         <Compile Include="Extra\Extra.cs" />
         <Compile Include="Extra\NVCP.cs" />
         <Compile Include="Extra\WSH.cs" />
