@@ -4,10 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
-using System.Windows.Interop;
 
 namespace Misc.FolderPicker
 {
