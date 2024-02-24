@@ -7,8 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
-using System.Windows.Forms;
-using Misc.FolderPicker;
+using amecs.Misc;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Dism;
 
@@ -16,103 +15,28 @@ namespace amecs.Actions
 {
     public class _NET
     {
-        private static string file;
-        private static bool CheckFileViolation(string inputFile)
-        {
-            try
-            {
-                file = inputFile;
-            }
-            catch (SecurityException e)
-            {
-                Console.WriteLine();
-                ConsoleTUI.OpenFrame.Close("Security error: " + e.Message, ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
-                return true;
-            }
+        private static string isoPath;
+        private static string mountedPath;
 
-            return false;
-        }
-        
-        private static bool DismountImage()
+        private static void Unmount()
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.CreateNoWindow = false;
-            startInfo.UseShellExecute = false;
-            startInfo.FileName = "PowerShell.exe";
-            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            startInfo.Arguments = $"-NoP -C \"Dismount-DiskImage '{file}'\"";
-            startInfo.RedirectStandardOutput = true;
-
-            var proc = Process.Start(startInfo);
-            proc.WaitForExit();
-            return true;
+            if (isoPath == "none")
+                return;
+            
+            SelectWindowsImage.DismountIso(isoPath);
         }
         
         public static bool Install()
         {
-            string letter;
-            
-            var choice = new ChoicePrompt() { Text = "To install .NET 3.5, Windows installation media is needed.\r\nDo you have a Windows USB instead of an ISO? (Y/N): " }.Start();
-            if (choice == null) return false;
-            var usingFolder = choice == 0;
-            if (usingFolder)
+            (mountedPath, isoPath) = SelectWindowsImage.GetMediaPath();
+            if (mountedPath == null) return false;
+
+            if (!Directory.Exists(mountedPath + @"\sources\sxs") || !Directory.GetFiles(mountedPath + @"\sources\sxs", "*netfx3*").Any())
             {
-                var dlg = new FolderPicker();
-                dlg.InputPath = Globals.UserFolder;
-                if (!dlg.ShowDialog(IntPtr.Zero, false).GetValueOrDefault())
-                {
-                    Console.WriteLine();
-                    ConsoleTUI.OpenFrame.Close("\r\nYou must select a folder or drive.", new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
-                    return true;
-                }
-                if (CheckFileViolation(dlg.ResultPath)) return false;
-                letter = dlg.ResultPath;
-            }
-            else
-            {
-                var dialog = new System.Windows.Forms.OpenFileDialog();
-                dialog.Filter = "ISO Files (*.ISO)| *.ISO"; // Filter files by extension
-                dialog.Multiselect = false;
-                dialog.InitialDirectory = Globals.UserFolder;
-
-                NativeWindow window = new NativeWindow();
-                window.AssignHandle(Process.GetCurrentProcess().MainWindowHandle);
-                if (dialog.ShowDialog(window) == DialogResult.OK)
-                {
-                    if (CheckFileViolation(dialog.FileName)) return false;
-                    Console.WriteLine();
-                    ConsoleTUI.OpenFrame.WriteCentered("\r\nMounting ISO");
-                }
-                else
-                {
-                    Console.WriteLine();
-                    ConsoleTUI.OpenFrame.Close("\r\nYou must select an ISO.", new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
-                    return true;
-                }
-                
-                using (new ConsoleUtils.LoadingIndicator(true))
-                {
-                    ProcessStartInfo startInfo = new ProcessStartInfo();
-                    startInfo.CreateNoWindow = false;
-                    startInfo.UseShellExecute = false;
-                    startInfo.FileName = "PowerShell.exe";
-                    startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    startInfo.Arguments =
-                        $"-NoP -C \"(Mount-DiskImage '{file}' -PassThru | Get-Volume).DriveLetter + ':\'\"";
-                    startInfo.RedirectStandardOutput = true;
-
-                    var proc = Process.Start(startInfo);
-                    proc.WaitForExit();
-
-                    letter = proc.StandardOutput.ReadLine();
-                }
-            }
-
-            if (!Directory.Exists(letter + @"\sources\sxs") || !Directory.GetFiles(letter + @"\sources\sxs", "*netfx3*").Any())
-            {
-                DismountImage();
+                Unmount();
                 Console.WriteLine();
-                ConsoleTUI.OpenFrame.Close("ISO/USB/folder does not contain the required files.", ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                ConsoleTUI.OpenFrame.Close("ISO/USB/folder does not contain the required files.",
+                    ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
                 return false;
             }
             
@@ -120,63 +44,52 @@ namespace amecs.Actions
             var topCache = Console.CursorTop;
             var leftCache = Console.CursorLeft;
             Console.WriteLine();
-            bool inProgress = false;
+            var inProgress = false;
             try
             {
-                using (var indicator = new ConsoleUtils.LoadingIndicator())
+                using var indicator = new ConsoleUtils.LoadingIndicator();
+                DismApi.Initialize(DismLogLevel.LogErrors);
+                using (var session = DismApi.OpenOnlineSession())
                 {
-                    DismApi.Initialize(DismLogLevel.LogErrors);
-                    using (var session = DismApi.OpenOnlineSession())
+                    var stdout = GetStdHandle(-11);
+                    bool indicatorStopped = false;
+                    var maxHashTags = (ConsoleTUI.OpenFrame.DisplayWidth - 5);
+                    DismApi.EnableFeatureByPackagePath(session, "NetFX3", null, true, true, new List<string>() { mountedPath + @"\sources\sxs" }, delegate(DismProgress progress)
                     {
-                        var stdout = GetStdHandle(-11);
-                        bool indicatorStopped = false;
-                        var maxHashTags = (ConsoleTUI.OpenFrame.DisplayWidth - 5);
-                        DismApi.EnableFeatureByPackagePath(session, "NetFX3", null, true, true, new List<string>() { letter + @"\sources\sxs" }, delegate(DismProgress progress)
+                        inProgress = true;
+                        if (!indicatorStopped)
                         {
-                            inProgress = true;
-                            if (!indicatorStopped)
-                            {
-                                indicator.Stop();
-                                Console.SetCursorPosition(leftCache, topCache);
-                                Console.WriteLine("   ");
-                            }
+                            indicator.Stop();
+                            Console.SetCursorPosition(leftCache, topCache);
+                            Console.WriteLine("   ");
+                        }
 
-                            indicatorStopped = true;
-                            var progressPerc = progress.Current / 10;
-                            var currentHashTags = (int)Math.Ceiling(Math.Min(((double)progressPerc / 100) * maxHashTags, maxHashTags));
-                            var spaces = maxHashTags - currentHashTags + (4 - progressPerc.ToString().Length);
-                            var sb = new StringBuilder(new string('#', currentHashTags) + new string(' ', spaces) + progressPerc + "%");
-                            uint throwaway;
-                            WriteConsoleOutputCharacter(stdout, sb, (uint)sb.Length, new Languages.COORD((short)ConsoleTUI.OpenFrame.DisplayOffset, (short)Console.CursorTop), out throwaway);
-                            inProgress = false;
-                        });
-                        session.Close();
-                        Thread.Sleep(100);
-                        var sb = new StringBuilder(new string('#', maxHashTags) + " 100%");
+                        indicatorStopped = true;
+                        var progressPerc = progress.Current / 10;
+                        var currentHashTags = (int)Math.Ceiling(Math.Min(((double)progressPerc / 100) * maxHashTags, maxHashTags));
+                        var spaces = maxHashTags - currentHashTags + (4 - progressPerc.ToString().Length);
+                        var sb = new StringBuilder(new string('#', currentHashTags) + new string(' ', spaces) + progressPerc + "%");
                         uint throwaway;
                         WriteConsoleOutputCharacter(stdout, sb, (uint)sb.Length, new Languages.COORD((short)ConsoleTUI.OpenFrame.DisplayOffset, (short)Console.CursorTop), out throwaway);
-                    }
-
-                    DismApi.Shutdown();
-                    if (!usingFolder) DismountImage();
+                        inProgress = false;
+                    });
+                    session.Close();
+                    Thread.Sleep(100);
+                    var sb = new StringBuilder(new string('#', maxHashTags) + " 100%");
+                    uint throwaway;
+                    WriteConsoleOutputCharacter(stdout, sb, (uint)sb.Length, new Languages.COORD((short)ConsoleTUI.OpenFrame.DisplayOffset, (short)Console.CursorTop), out throwaway);
                 }
+
+                DismApi.Shutdown();
+                Unmount();
             } catch (Exception e)
             {
                 while (inProgress)
                 {
                     Thread.Sleep(50);
                 }
-
-                if (!usingFolder)
-                {
-                    try
-                    {
-                        DismountImage();
-                    }
-                    catch (Exception ex)
-                    {
-                    }
-                }
+                
+                Unmount();
 
                 Console.WriteLine();
                 Console.WriteLine();
@@ -190,7 +103,6 @@ namespace amecs.Actions
             
             Console.WriteLine();
             Console.WriteLine();
-            if (!usingFolder)
             ConsoleTUI.OpenFrame.Close(".NET 3.5 installed successfully", ConsoleColor.Green, Console.BackgroundColor, new ChoicePrompt()
             {
                 AnyKey = true,
