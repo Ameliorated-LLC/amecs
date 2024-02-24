@@ -164,7 +164,7 @@ namespace Ameliorated.ConsoleUtils
             while (true)
             {
                 keyPressed = Console.ReadKey(true).Key;
-                if (keyPressed == ConsoleKey.DownArrow)
+                if (keyPressed == ConsoleKey.DownArrow || keyPressed == ConsoleKey.S)
                 {
                     if (validIndex >= currentValidChoices.Count - 1) continue;
                     Console.SetCursorPosition(Math.Max(TotalOffset - 2, 0), Console.CursorTop);
@@ -182,7 +182,7 @@ namespace Ameliorated.ConsoleUtils
                     validIndex += 1;
                 }
 
-                if (keyPressed == ConsoleKey.UpArrow)
+                if (keyPressed == ConsoleKey.UpArrow || keyPressed == ConsoleKey.W)
                 {
                     if (!(validIndex > 0)) continue;
 
@@ -201,7 +201,7 @@ namespace Ameliorated.ConsoleUtils
                     validIndex -= 1;
                 }
 
-                if (keyPressed == ConsoleKey.RightArrow || keyPressed == ConsoleKey.PageUp ||
+                if (keyPressed == ConsoleKey.RightArrow  || keyPressed == ConsoleKey.A || keyPressed == ConsoleKey.PageUp ||
                     (keyPressed == ConsoleKey.Enter && currentValidChoices[validIndex].IsNextButton))
                 {
                     if (pageIndex == pages)
@@ -245,7 +245,7 @@ namespace Ameliorated.ConsoleUtils
                     continue;
                 }
 
-                if (keyPressed == ConsoleKey.LeftArrow || keyPressed == ConsoleKey.PageDown ||
+                if (keyPressed == ConsoleKey.LeftArrow || keyPressed == ConsoleKey.D || keyPressed == ConsoleKey.PageDown ||
                     (keyPressed == ConsoleKey.Enter && currentValidChoices[validIndex].IsPreviousButton))
                 {
                     if (pageIndex == 1)
