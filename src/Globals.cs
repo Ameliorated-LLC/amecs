@@ -36,6 +36,6 @@ namespace amecs
             return true;
         }
         
-        public static readonly int WinVer = Int32.Parse(Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion").GetValue("CurrentBuildNumber").ToString());
+        public static readonly int WinVer = int.Parse(Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion").GetValue("CurrentBuildNumber").ToString());
     }
 }

@@ -15,23 +15,23 @@ namespace amecs.Actions
 {
     public class _NET
     {
-        private static string isoPath;
-        private static string mountedPath;
+        private static string _mountedPath;
+        private static string _isoPath;
 
         private static void Unmount()
         {
-            if (isoPath == "none")
+            if (_isoPath == "none")
                 return;
             
-            SelectWindowsImage.DismountIso(isoPath);
+            SelectWindowsImage.DismountIso(_isoPath);
         }
         
         public static bool Install()
         {
-            (mountedPath, isoPath) = SelectWindowsImage.GetMediaPath();
-            if (mountedPath == null) return false;
+            (_mountedPath, _isoPath, _, _, _) = SelectWindowsImage.GetMediaPath(true);
+            if (_mountedPath == null) return false;
 
-            if (!Directory.Exists(mountedPath + @"\sources\sxs") || !Directory.GetFiles(mountedPath + @"\sources\sxs", "*netfx3*").Any())
+            if (!Directory.Exists(_mountedPath + @"\sources\sxs") || !Directory.GetFiles(_mountedPath + @"\sources\sxs", "*netfx3*").Any())
             {
                 Unmount();
                 Console.WriteLine();
@@ -52,9 +52,9 @@ namespace amecs.Actions
                 using (var session = DismApi.OpenOnlineSession())
                 {
                     var stdout = GetStdHandle(-11);
-                    bool indicatorStopped = false;
+                    var indicatorStopped = false;
                     var maxHashTags = (ConsoleTUI.OpenFrame.DisplayWidth - 5);
-                    DismApi.EnableFeatureByPackagePath(session, "NetFX3", null, true, true, new List<string>() { mountedPath + @"\sources\sxs" }, delegate(DismProgress progress)
+                    DismApi.EnableFeatureByPackagePath(session, "NetFX3", null, true, true, new List<string>() { _mountedPath + @"\sources\sxs" }, delegate(DismProgress progress)
                     {
                         inProgress = true;
                         if (!indicatorStopped)
@@ -65,12 +65,11 @@ namespace amecs.Actions
                         }
 
                         indicatorStopped = true;
-                        var progressPerc = progress.Current / 10;
-                        var currentHashTags = (int)Math.Ceiling(Math.Min(((double)progressPerc / 100) * maxHashTags, maxHashTags));
-                        var spaces = maxHashTags - currentHashTags + (4 - progressPerc.ToString().Length);
-                        var sb = new StringBuilder(new string('#', currentHashTags) + new string(' ', spaces) + progressPerc + "%");
-                        uint throwaway;
-                        WriteConsoleOutputCharacter(stdout, sb, (uint)sb.Length, new Languages.COORD((short)ConsoleTUI.OpenFrame.DisplayOffset, (short)Console.CursorTop), out throwaway);
+                        var progressPercentage = progress.Current / 10;
+                        var currentHashTags = (int)Math.Ceiling(Math.Min(((double)progressPercentage / 100) * maxHashTags, maxHashTags));
+                        var spaces = maxHashTags - currentHashTags + (4 - progressPercentage.ToString().Length);
+                        var sb = new StringBuilder(new string('#', currentHashTags) + new string(' ', spaces) + progressPercentage + "%");
+                        WriteConsoleOutputCharacter(stdout, sb, (uint)sb.Length, new Languages.COORD((short)ConsoleTUI.OpenFrame.DisplayOffset, (short)Console.CursorTop), out _);
                         inProgress = false;
                     });
                     session.Close();
