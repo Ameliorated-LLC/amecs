@@ -155,8 +155,7 @@ Continue? (Y/N): "
 
                 key.Close();
             }
-
-            Console.ReadKey();
+            
             Program.Frame.Clear();
             ConsoleTUI.OpenFrame.WriteCentered("\r\nCompleted initial setup!", ConsoleColor.Green);
             ConsoleTUI.OpenFrame.WriteCentered("\r\nWindows Setup will display as 'Windows Server,' but it's not actually installing Windows Server and is only set as such to bypass hardware requirements.");
