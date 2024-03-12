@@ -188,6 +188,7 @@
     <ItemGroup>
         <Compile Include="Actions\.NET.cs" />
         <Compile Include="Actions\AutoLogon.cs" />
+        <Compile Include="Actions\Deameliorate.cs" />
         <Compile Include="Actions\Elevation.cs" />
         <Compile Include="Actions\Languages.cs" />
         <Compile Include="Actions\Lockscreen.cs" />

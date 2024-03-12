@@ -24,7 +24,7 @@ namespace amecs.Misc
             catch (SecurityException e)
             {
                 Console.WriteLine();
-                ConsoleTUI.OpenFrame.Close("Security exception: " + e.Message, ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                ConsoleTUI.OpenFrame.Close("Security exception: " + e.Message, ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt { AnyKey = true, Text = "Press any key to return to the Menu: " });
                 return true;
             }
 
@@ -80,7 +80,7 @@ namespace amecs.Misc
         {
             var error = ((string)null, "none", (string)null, (int?)null, (bool?)null);
             var choice =
-                new ChoicePrompt() { Text = "To continue, Windows installation media is needed.\r\nDo you have a Windows USB instead of an ISO file? (Y/N): " }.Start();
+                new ChoicePrompt { Text = "To continue, Windows installation media is needed.\r\nDo you have a Windows USB instead of an ISO file? (Y/N): " }.Start();
             if (!choice.HasValue) return error;
             
             // Folder/drive chosen
@@ -103,7 +103,7 @@ namespace amecs.Misc
                 {
                     Console.WriteLine();
                     ConsoleTUI.OpenFrame.Close("\r\nYou must select a folder or drive containing Windows installation media.",
-                        new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                        new ChoicePrompt { AnyKey = true, Text = "Press any key to return to the Menu: " });
                     return error;
                 }
             }
@@ -128,7 +128,7 @@ namespace amecs.Misc
                 {
                     Console.WriteLine();
                     ConsoleTUI.OpenFrame.Close("\r\nYou must select an ISO.",
-                        new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                        new ChoicePrompt { AnyKey = true, Text = "Press any key to return to the Menu: " });
                     return error;
                 }
 
@@ -182,18 +182,18 @@ namespace amecs.Misc
                     {
                         case true when isoBuildMustBeReturned:
                             ConsoleTUI.OpenFrame.Close(
-                                $"Multiple Windows versions were found in the Windows image, can't determine which Windows build it is. Please use an unmodified Windows ISO.",
+                                "Multiple Windows versions were found in the Windows image, can't determine which Windows build it is. Please use an unmodified Windows ISO.",
                                 ConsoleColor.Red, Console.BackgroundColor,
-                                new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                                new ChoicePrompt { AnyKey = true, Text = "Press any key to return to the Menu: " });
                             return error;
                         case true when winVersionsMustMatch:
                             ConsoleTUI.OpenFrame.Close(
-                                $"Multiple Windows versions were found in the Windows image, can't determine which Windows build it is. If your Windows version doesn't match the ISO, there will be problems.",
+                                "Multiple Windows versions were found in the Windows image, can't determine which Windows build it is. If your Windows version doesn't match the ISO, there will be problems.",
                                 ConsoleColor.Red, Console.BackgroundColor,
-                                new ChoicePrompt() { AnyKey = true, Text = "Press any key to continue anyways: " });
+                                new ChoicePrompt { AnyKey = true, Text = "Press any key to continue anyways: " });
                         
                             Program.Frame.Clear();
-                            ConsoleTUI.OpenFrame.WriteCentered("\r\nContinuing without version check\r\n");
+                            ConsoleTUI.OpenFrame.WriteCentered("\r\nContinuing without version check...\r\n");
                             break;
                     }
 
@@ -207,7 +207,7 @@ namespace amecs.Misc
                     ConsoleTUI.OpenFrame.Close(
                         "Error checking ISO version: " + e.Message.TrimEnd('\n').TrimEnd('\r'),
                         ConsoleColor.Red, Console.BackgroundColor,
-                        new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                        new ChoicePrompt { AnyKey = true, Text = "Press any key to return to the Menu: " });
                     return error;
                 }
                 finally
@@ -226,18 +226,19 @@ namespace amecs.Misc
                 var hostVersion = Environment.OSVersion.Version;
                 var hostWinver = GetWindowsVersion(float.Parse($"{hostVersion.Major}.{hostVersion.Minor}"), hostVersion.Build);
                 
-                // If it all matches
-                if (hostWinver == _isoWinVer && winVersionsMustMatch) return (_mountedPath, _isoPath, _isoWinVer, _isoBuild, true);
-                // If ISO version doesn't match host version, and winVersionsMustMatch is true 
+                // If it all matches & winVersionsMustMatch
+                if (hostWinver == _isoWinVer) return (_mountedPath, _isoPath, _isoWinVer, _isoBuild, true);
+                // If ISO version doesn't match host version & winVersionsMustMatch
                 if (hostWinver != _isoWinVer && winVersionsMustMatch)
                 {
                     if (!string.IsNullOrEmpty(_isoPath)) DismountIso(_isoPath);
                     ConsoleTUI.OpenFrame.Close(
                         $"You're on {hostWinver}, but the selected image is {_isoWinVer}. You can only use an ISO that matches your Windows version.",
                         ConsoleColor.Red, Console.BackgroundColor,
-                        new ChoicePrompt() { AnyKey = true, Text = "Press any key to return to the Menu: " });
+                        new ChoicePrompt { AnyKey = true, Text = "Press any key to return to the Menu: " });
                     return error;
                 }
+                
                 // If ISO version doesn't match host version, and winVersionsMustMatch is true 
                 if (hostWinver != _isoWinVer) return (_mountedPath, _isoPath, _isoWinVer, _isoBuild, false);
             }
@@ -247,9 +248,9 @@ namespace amecs.Misc
                 : "Press any key to continue anyways";
             
             ConsoleTUI.OpenFrame.Close(
-                $"No Windows installation image was found inside the selected Windows media. No version check can be done, things might break.",
+                "No Windows installation image was found inside the selected Windows media. No version check can be done, things might break.",
                 ConsoleColor.Red, Console.BackgroundColor,
-                new ChoicePrompt() { AnyKey = true, Text = $"{noWimText}: " });
+                new ChoicePrompt { AnyKey = true, Text = $"{noWimText}: " });
             
             Program.Frame.Clear();
             ConsoleTUI.OpenFrame.WriteCentered("\r\nContinuing without version check\r\n");
