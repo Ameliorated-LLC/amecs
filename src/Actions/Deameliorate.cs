@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Security.Principal;
 using System.Threading;
 using amecs.Misc;
@@ -14,6 +13,9 @@ namespace amecs.Actions
     {
         private static string _mountedPath;
         private static string _winVer;
+        private static string _win11Setup = "";
+        private static bool _win11 = Environment.OSVersion.Version.Build >= 22000;
+        private const string ExplorerPatcherId = "D17F1E1A-5919-4427-8F89-A1A8503CA3EB";
         
         public static bool DeAme()
         {
@@ -64,9 +66,7 @@ Continue? (Y/N): "
                     try
                     {
                         if (((string)key.OpenSubKey(item).GetValue("DisplayName")).Equals("Open-Shell"))
-                        {
                             openShellId = item;
-                        }
                     }
                     catch
                     {
@@ -78,8 +78,7 @@ Continue? (Y/N): "
                 {
                     ConsoleTUI.OpenFrame.WriteCentered("\r\nUninstalling Open-Shell...");
 
-                    var proc = Process.Start("MsiExec.exe", $"/X{openShellId} /quiet");
-                    proc.WaitForExit();
+                    Process.Start("MsiExec.exe", $"/X{openShellId} /quiet")?.WaitForExit();
 
                     if (userSid != null)
                     {
@@ -156,20 +155,23 @@ Continue? (Y/N): "
                 key.Close();
             }
             
+            Thread.Sleep(3000);
             Program.Frame.Clear();
             ConsoleTUI.OpenFrame.WriteCentered("\r\nCompleted initial setup!", ConsoleColor.Green);
-            ConsoleTUI.OpenFrame.WriteCentered("\r\nWindows Setup will display as 'Windows Server,' but it's not actually installing Windows Server and is only set as such to bypass hardware requirements.");
-            
-            Console.WriteLine();
-            ConsoleTUI.OpenFrame.WriteCentered("\r\nWaiting 10 seconds and starting...");
+            if (_win11)
+            {
+                ConsoleTUI.OpenFrame.WriteCentered("\r\nWindows Setup will display as 'Windows Server,' but it's not actually installing Windows Server and is only set as such to bypass hardware requirements.");
+                Console.WriteLine();
+            }
+            ConsoleTUI.OpenFrame.WriteCentered("\r\nWaiting 10 seconds and starting Windows Setup...");
             
             Console.ForegroundColor = fc;
             Thread.Sleep(10000);
-            
             Console.WriteLine();
             try
             {
-                Process.Start(Path.Combine(_mountedPath, "setup.exe"), "/Auto Upgrade /DynamicUpdate Disable /Product Server");
+                if (_win11) _win11Setup = "/Product Server";
+                Process.Start(Path.Combine(_mountedPath, "setup.exe"), $"/Auto Upgrade /DynamicUpdate Disable {_win11Setup}");
             } catch (Exception e)
             {
                 ConsoleTUI.OpenFrame.Close(
