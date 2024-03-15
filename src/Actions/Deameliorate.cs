@@ -92,10 +92,63 @@ Continue? (Y/N): "
                 var epSetupPath = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)}\ExplorerPatcher\ep_setup.exe";
                 if (File.Exists(epSetupPath))
                 {
-                    ConsoleTUI.OpenFrame.WriteCentered("\r\nUninstalling ExplorerPatcher, you'll need to click the prompts...");
-                
-                    var proc = Process.Start(epSetupPath, $"/uninstall");
-                    proc.WaitForExit();
+                    ConsoleTUI.OpenFrame.WriteCentered("\r\nUninstalling ExplorerPatcher...");
+
+                    var winlogon = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon", true);
+                    winlogon?.SetValue("AutoRestartShell", 0);
+                    
+                    // kill processes that the files use
+                    foreach (var processName in new[] {"explorer.exe", "rundll32.exe", "dllhost.exe", "ShellExperienceHost.exe", "StartMenuExperienceHost.exe"})
+                    {
+                        foreach (var process in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(processName)))
+                        {
+                            process.Kill();
+                            process.WaitForExit();
+                        }
+                    }
+                    
+                    // delete DWM service that removes rounded corners
+                    Process.Start("sc", $"stop \"ep_dwm_{ExplorerPatcherId}\"")?.WaitForExit();
+                    Process.Start("sc", $"delete \"ep_dwm_{ExplorerPatcherId}\"")?.WaitForExit();
+
+                    // remove registered DLL
+                    var explorerPatcherDllPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "ExplorerPatcher", "ExplorerPatcher.amd64.dll");
+                    Process.Start("regsvr32.exe", $"/s /u \"{explorerPatcherDllPath}\"")?.WaitForExit();
+
+                    // delete files
+                    foreach (var file in new[]
+                             {
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     @"SystemApps\ShellExperienceHost_cw5n1h2txyewy\dxgi.dll"),
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     @"SystemApps\ShellExperienceHost_cw5n1h2txyewy\wincorlib.dll"),
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     @"SystemApps\ShellExperienceHost_cw5n1h2txyewy\wincorlib_orig.dll"),
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     @"SystemApps\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\dxgi.dll"),
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     @"SystemApps\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\wincorlib.dll"),
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     @"SystemApps\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\wincorlib_orig.dll"),
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                                     "dxgi.dll")
+                             })
+                    {
+                        if (File.Exists(file)) File.Delete(file);
+                    }
+                    foreach (var folder in new[]
+                             {
+                                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                                     "ExplorerPatcher"),
+                                 Path.Combine(
+                                     Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                                     @"Microsoft\Windows\Start Menu\Programs\ExplorerPatcher")
+                             })
+                    {
+                        if (Directory.Exists(folder)) Directory.Delete(folder, true);
+                    }
+                    
+                    winlogon?.SetValue("AutoRestartShell", 1);
                 }
                 
                 Program.Frame.Clear();
@@ -110,25 +163,18 @@ Continue? (Y/N): "
                 ConsoleTUI.OpenFrame.WriteCentered("\r\nContinuing without uninstalling software...\r\n");
             }
             
-            // ExplorerPatcher re-opens Explorer as SYSTEM after uninstalling, so it has to be restarted
-            // no silent uninstall is available, so user has to manually click 'Yes' to uninstall
-            // https://github.com/valinet/ExplorerPatcher/discussions/2007
-            Thread.Sleep(500);
-            var winlogon = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon", true);
-            winlogon.SetValue("AutoRestartShell", 0);
-            foreach (var exp in Process.GetProcessesByName("explorer"))
-            {
-                exp.Kill();
-            }
-            winlogon.SetValue("AutoRestartShell", 1);
-            NSudo.RunProcessAsUser(NSudo.GetUserToken(), "explorer.exe", "", 0);
-            
-            // all policies are cleared as a user that's de-ameliorating is unlikely
-            // to have their own policies in the first place
+            // restart Explorer
+            if (Process.GetProcessesByName("explorer").Length == 0)
+                NSudo.RunProcessAsUser(NSudo.GetUserToken(), "explorer.exe", "", 0);
+
+            // all policies are cleared as a user that's de-ameliorating is unlikely to have their own policies in the first place
+            // also clear ExplorerPatcher Registry entries
             ConsoleTUI.OpenFrame.WriteCentered("\r\nClearing policies...");
             foreach (var keyPath in new[] {
                 $@"HKU\{userSid}\Software\Microsoft\Windows\CurrentVersion\Policies",
                 $@"HKU\{userSid}\Software\Policies",
+                $@"HKU\{userSid}\Software\ExplorerPatcher",
+                $@"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{{{ExplorerPatcherId}}}_ExplorerPatcher",
                 @"HKLM\Software\Microsoft\Windows\CurrentVersion\Policies",
                 @"HKLM\Software\Policies",
                 @"HKLM\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies"
