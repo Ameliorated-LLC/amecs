@@ -323,6 +323,7 @@ namespace Ameliorated.ConsoleUtils
                 ConsoleUtils.ResetColor();
             }
 
+            // TODO: Fix this splitting lines when a piece of text can fit on one line
             private List<CenteredString> CenterLines(string text, LineCenterOptions options, int maxWidth = 0)
             {
                 var _maxWidth = DisplayWidth;

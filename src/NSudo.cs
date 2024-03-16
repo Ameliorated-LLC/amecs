@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
 
 namespace amecs
@@ -505,8 +506,20 @@ namespace amecs
             RtlAdjustPrivilege((int)luid, true, true, out throwaway);
         }
         
-        public class Win32 {
-            
+        public static void RunAsUser(Action action)
+        {
+            var token = NSudo.GetUserToken();
+            Task.Run((Action)Delegate.Combine((Action)(() => { NSudo.GetUserPrivilege(token); }),
+                action)).Wait();
+            Marshal.FreeHGlobal(token);
+        }
+        
+        private static async Task RunAsUserAsync(Action action)
+        {
+            var token = NSudo.GetUserToken();
+            await Task.Run((Action)Delegate.Combine((Action)(() => { NSudo.GetUserPrivilege(token); }),
+                action));
+            Marshal.FreeHGlobal(token);
         }
     }
 }

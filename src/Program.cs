@@ -1,19 +1,9 @@
 ﻿using System;
-using System.Diagnostics;
-using System.DirectoryServices;
 using System.DirectoryServices.AccountManagement;
-using System.Globalization;
 using System.Linq;
-using System.Management;
-using System.Runtime.InteropServices;
-using System.Security;
 using System.Security.Principal;
-using System.Threading;
-using System.Threading.Tasks;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Win32;
-using System.Windows.Forms;
-using System.Windows.Forms.VisualStyles;
 using amecs.Actions;
 using Menu = Ameliorated.ConsoleUtils.Menu;
 
@@ -21,23 +11,6 @@ namespace amecs
 {
     internal class Program
     {
-        private static void RunAsUser(Action action)
-        {
-            var token = NSudo.GetUserToken();
-            Task.Run((Action)Delegate.Combine((Action)(() => { NSudo.GetUserPrivilege(token); }),
-                action)).Wait();
-            Marshal.FreeHGlobal(token);
-        }
-
-        private static async Task RunAsUserAsync(Action action)
-        {
-            var token = NSudo.GetUserToken();
-            await Task.Run((Action)Delegate.Combine((Action)(() => { NSudo.GetUserPrivilege(token); }),
-                action));
-            Marshal.FreeHGlobal(token);
-        }
-
-
         private const string Ver = "2.1";
         public static ConsoleTUI.Frame Frame;
         [STAThread]
@@ -51,7 +24,7 @@ namespace amecs
                 NSudo.GetSystemPrivilege();
                 if (!WindowsIdentity.GetCurrent().IsSystem)
                     throw new Exception("Identity did not change.");
-                RunAsUser(() =>
+                NSudo.RunAsUser(() =>
                 {
                     Globals.Username = WindowsIdentity.GetCurrent().Name.Split('\\').Last();
                     Globals.UserDomain = WindowsIdentity.GetCurrent().Name.Split('\\').FirstOrDefault();
@@ -82,9 +55,8 @@ namespace amecs
             }
 
             Frame = new ConsoleTUI.Frame($"| Central AME Script v{Ver} |", false);
-
             Frame.Open();
-
+            
             while (true)
             {
                 Globals.UserElevated = Globals.User.IsMemberOf(Globals.Administrators);
@@ -137,6 +109,7 @@ namespace amecs
                             new Menu.MenuItem("Install .NET 3.5", new Func<bool>(_NET.Install)) :
                             new Menu.MenuItem("Install .NET 3.5", new Func<bool>(_NET.Install)) {SecondaryText = "[Installed]", SecondaryTextForeground = ConsoleColor.Yellow, PrimaryTextForeground = ConsoleColor.DarkGray},
                         Menu.MenuItem.Blank,
+                        new Menu.MenuItem("Uninstall AME", new Func<bool>(Deameliorate.DeAme)),
                         new Menu.MenuItem("Extra", new Func<bool>(Extra.Extra.ShowMenu)),
                         new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit))
                     },
