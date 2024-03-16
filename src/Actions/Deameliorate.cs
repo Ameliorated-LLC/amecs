@@ -28,13 +28,13 @@ Although user data should be kept, we strongly recommend
 making backups of any important user data.
 
 Continue? (Y/N): "
-                }.Start().Value == 2) return true;
+                }.Start().Value == 1) return true;
             
             Program.Frame.Clear();
             (_mountedPath, _, _winVer, _, _) = SelectWindowsImage.GetMediaPath();
             if (_mountedPath == null) return false;
             
-            if (new ChoicePrompt {Text = $"\r\nYour Windows image is {_winVer}. Continue? (Y/N): "}.Start().Value == 2)
+            if (new ChoicePrompt {Text = $"\r\nYour Windows image is {_winVer}. Continue? (Y/N): "}.Start().Value == 1)
                 return true;
             
             var fc = Console.ForegroundColor;
