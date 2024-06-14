@@ -8,6 +8,7 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Dism;
 using Microsoft.Win32;
@@ -17,7 +18,7 @@ namespace amecs.Actions
 {
     public class Languages
     {
-        public static bool ShowMenu()
+        public static Task<bool> ShowMenu()
         {
             while (true)
             {
@@ -67,15 +68,15 @@ namespace amecs.Actions
                 try
                 {
                     mainMenu.Write();
-                    var res = mainMenu.Load();
+                    var res = mainMenu.Load(true);
                     if (res == null)
-                        return true;
+                        return Task.FromResult(true);
                     result = (Func<bool>)res;
                 } catch (Exception e)
                 {
                     Console.WriteLine(e);
                     Console.ReadLine();
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 try

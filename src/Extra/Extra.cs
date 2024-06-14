@@ -6,6 +6,7 @@ using System.Management;
 using System.Net.Http;
 using System.ServiceProcess;
 using System.Threading;
+using System.Threading.Tasks;
 using amecs.Actions;
 using Ameliorated.ConsoleUtils;
 
@@ -13,25 +14,11 @@ namespace amecs.Extra
 {
     public static partial class Extra
     {
-        public static bool ShowMenu()
+        public static Task<bool> ShowMenu()
         {
             while (true)
             {
                 Program.Frame.Clear();
-                
-                bool hibernation = new Reg.Value()
-                                   {
-                                       KeyName = @"HKLM\SYSTEM\CurrentControlSet\Control\Power",
-                                       ValueName = "HibernateEnabled",
-                                       Data = 1,
-                                   }.IsEqual()
-                                   &&
-                                   new Reg.Value()
-                                   {
-                                       KeyName = @"HKLM\SYSTEM\CurrentControlSet\Control\Power",
-                                       ValueName = "HiberFileType",
-                                       Data = 2,
-                                   }.IsEqual();
                 
                 bool notifications = new Reg.Value()
                 {
@@ -61,21 +48,28 @@ namespace amecs.Extra
                     ValueName = "EnableActiveProbing",
                     Data = 1,
                 }.IsEqual();
-
+                
+                bool settingsHidden = !new Reg.Value()
+                {
+                    KeyName = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer",
+                    ValueName = "SettingsPageVisibility",
+                    Operation = Reg.RegistryValueOperation.Delete,
+                    Type = Reg.RegistryValueType.REG_SZ
+                }.IsEqual();
+                
                 var mainMenu = new Ameliorated.ConsoleUtils.Menu()
                 {
                     Choices =
                     {
-                        new Menu.MenuItem("Manage WSL", null) {IsEnabled = false, SecondaryText = "[Not Supported]", PrimaryTextForeground = ConsoleColor.DarkGray, SecondaryTextForeground = ConsoleColor.Red},
-                        hibernation ? 
-                            new Menu.MenuItem("Disable Hibernation", new Func<bool>(DisableHibernation)) : 
-                            new Menu.MenuItem("Enable Hibernation", new Func<bool>(EnableHibernation)),
-                        notificationCenter ? 
-                            new Menu.MenuItem("Disable Notification Center", new Func<bool>(DisableNotifCen)) : 
-                            new Menu.MenuItem("Enable Notification Center", new Func<bool>(EnableNotifCen)),
+                        settingsHidden ?
+                            new Menu.MenuItem("Restore Hidden Settings Pages", new Func<bool>(RestoreSettingsPages)) : 
+                            new Menu.MenuItem("Hide Restored Settings Pages", new Func<bool>(HideSettingsPages)),
                         notifications ? 
                             new Menu.MenuItem("Disable Desktop Notifications", new Func<bool>(DisableNotifications)) : 
                             new Menu.MenuItem("Enable Desktop Notifications", new Func<bool>(EnableNotifications)),
+                        notificationCenter ? 
+                            new Menu.MenuItem("Disable Notification Center", new Func<bool>(DisableNotifCen)) : 
+                            new Menu.MenuItem("Enable Notification Center", new Func<bool>(EnableNotifCen)),
                         
                         GetWSHItem(),
                         vbsEnabled ? 
@@ -84,8 +78,8 @@ namespace amecs.Extra
                         ncsiEnabled ? 
                             new Menu.MenuItem("Disable NCSI Active Probing (Legacy)", new Func<bool>(DisableNCSI)) : 
                             new Menu.MenuItem("Enable NCSI Active Probing (Legacy)", new Func<bool>(EnableNCSI)),
-                        
-                        GetNVCPItem(),
+                       
+
                         Menu.MenuItem.Blank,
                         new Menu.MenuItem("Return to Menu", null),
                         new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit))
@@ -96,15 +90,15 @@ namespace amecs.Extra
                 try
                 {
                     mainMenu.Write();
-                    var res = mainMenu.Load();
+                    var res = mainMenu.Load(true);
                     if (res == null)
-                        return true;
+                        return Task.FromResult(true);
                     result = (Func<bool>)res;
                 } catch (Exception e)
                 {
                     Console.WriteLine(e);
                     Console.ReadLine();
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 try
@@ -116,6 +110,36 @@ namespace amecs.Extra
                 }
             }
         }
+        
+        private static bool RestoreSettingsPages() =>amecs.RunBasicAction("Restoring settings pages","Successfully restored settings pages",() => 
+        { 
+            new Reg.Value()
+            {
+                KeyName = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer",
+                ValueName = "SettingsPageVisibility",
+                Operation = Reg.RegistryValueOperation.Delete,
+                Type = Reg.RegistryValueType.REG_SZ
+            }.Apply(true, false);
+            Thread.Sleep(1600); 
+        });
+        private static bool HideSettingsPages() =>amecs.RunBasicAction("Restoring settings pages","Successfully restored settings pages",() => 
+        { 
+            new Reg.Value()
+            {
+                KeyName = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer",
+                ValueName = "SettingsPageVisibility",
+                Data = "hide:windowsdefender;activation;backup;delivery-optimization;findmydevice;developers;launchsecuritykeyenrollment;recovery;troubleshoot;windowsinsider;windowsinsider-optin;windowsupdate;windowsupdate-activehours;windowsupdate-options;workplace-provisioning;workplace-repairtoken;provisioning;windowsanywhere;regionlanguage-adddisplaylanguage;regionlanguage-languageoptions;regionlanguage-setdisplaylanguage;speech;storagerecommendations;surfacehub-accounts;search;search-moredetails;search-permissions;mobile-devices;personalization-start-places;gaming-gamebar;gaming-gamedvr;gaming-gamemode;family-group;cortana-moredetails;cortana-permissions;cortana-windowssearch;cortana;cortana-language;cortana-talktocortana;controlcenter;maps;maps-downloadmaps;videoplayback;appsforwebsites;optionalfeatures;workplace;emailandaccounts;otherusers;assignedaccess;signinoptions;signinoptions-dynamiclock;sync;backup;signinoptions-launchfaceenrollment;signinoptions-launchfingerprintenrollment;yourinfo;privacy-accessoryapps;privacy-accountinfo;privacy-activityhistory;privacy-advertisingid;privacy-appdiagnostics;privacy-automaticfiledownloads;privacy-backgroundapps;privacy-backgroundspatialperception;privacy-calendar;privacy-callhistory;privacy-webcam;privacy-contacts;privacy-documents;privacy-downloadsfolder;privacy-email;privacy-eyetracker;privacy-feedback;privacy-broadfilesystemaccess;privacy-general;privacy-graphicscaptureprogrammatic;privacy-graphicscapturewithoutborder;privacy-speechtyping;privacy-location;privacy-messaging;privacy-microphone;privacy-motion;privacy-musiclibrary;privacy-notifications;privacy-customdevices;privacy-phonecalls;privacy-pictures;privacy-radios;privacy-speech;privacy-tasks;privacy-videos;privacy-voiceactivation;account;crossdevice;project;camera;deviceusage;home;quiethours",
+                Type = Reg.RegistryValueType.REG_SZ
+            }.Apply(false, true);
+            new Reg.Value()
+            {
+                KeyName = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer",
+                ValueName = "SettingsPageVisibilityBackup",
+                Operation = Reg.RegistryValueOperation.Delete,
+                Type = Reg.RegistryValueType.REG_SZ
+            }.Apply();
+            Thread.Sleep(1600); 
+        });
 
         private static Menu.MenuItem GetNVCPItem()
         {
@@ -217,37 +241,6 @@ namespace amecs.Extra
                 Data = 0,
             }.IsEqual() ? new Menu.MenuItem("Disable Windows Script Host [WSH] (Legacy)", new Func<bool>(WSH.Enable)) : new Menu.MenuItem("Disable Windows Script Host [WSH] (Legacy)", new Func<bool>(WSH.Disable));
         }
-
-        private static bool EnableHibernation() =>amecs.RunBasicAction("Enabling hibernation","Enabled hibernation successfully",() => 
-        { 
-            Thread.Sleep(1600); 
-            
-            Process proc = new Process();
-            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.StartInfo.FileName = "powercfg.exe";
-            proc.StartInfo.Arguments = "/HIBERNATE /TYPE FULL";
-            proc.Start();
-            proc.WaitForExit(20000);
-
-            if (proc.ExitCode != 0)
-                throw new Exception("powercfg exited with a non-zero exitcode.\r\nHibernation may not be supported by your hardware.");
-        });
-
-        private static bool DisableHibernation() =>amecs.RunBasicAction("Disabling hibernation","Disabled hibernation successfully",() => 
-        { 
-            Thread.Sleep(1600); 
-            
-            Process proc = new Process();
-            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.StartInfo.FileName = "powercfg.exe";
-            proc.StartInfo.Arguments = "/HIBERNATE OFF";
-            proc.Start();
-            proc.WaitForExit(20000);
-
-            if (proc.ExitCode != 0)
-                throw new Exception("powercfg exited with a non-zero exitcode.");
-            Thread.Sleep(1600); 
-         });
 
         private static bool EnableNotifCen() =>amecs.RunBasicAction("Enabling Notification Center","Notification Center enabled successfully",() => 
         { 

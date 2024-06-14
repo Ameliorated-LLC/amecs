@@ -13,7 +13,7 @@ namespace amecs.Actions
 {
     public static class UserPass
     {
-        public static bool ShowMenu()
+        public static Task<bool> ShowMenu()
         {
             var mainMenu = new Ameliorated.ConsoleUtils.Menu()
             {
@@ -30,8 +30,8 @@ namespace amecs.Actions
                 SelectionForeground = ConsoleColor.Green
             };
             mainMenu.Write();
-            var result = (Func<bool>)mainMenu.Load();
-            return result.Invoke();
+            var result = (Func<bool>)mainMenu.Load(true);
+            return Task.FromResult(result.Invoke());
         }
         
         public static bool ChangeUsername()

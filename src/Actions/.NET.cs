@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using amecs.Misc;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Dism;
@@ -18,6 +19,25 @@ namespace amecs.Actions
         private static string _mountedPath;
         private static string _isoPath;
 
+        public static Task<bool> ShowMenu()
+        {
+            var mainMenu = new Ameliorated.ConsoleUtils.Menu()
+            {
+                Choices =
+                {
+                    new Menu.MenuItem("Install .NET 3.5 using a Windows USB", new Func<bool>(InstallUSB)),
+                    new Menu.MenuItem("Install .NET 3.5 using a Windows ISO", new Func<bool>(InstallISO)),
+                    Menu.MenuItem.Blank,
+                    new Menu.MenuItem("Return to Menu", new Func<bool>(() => true)),
+                    new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit)),
+                },
+                SelectionForeground = ConsoleColor.Green
+            };
+            mainMenu.Write("Windows install media is required to install .NET 3.5");
+            var result = (Func<bool>)mainMenu.Load(true);
+            return Task.FromResult(result.Invoke());
+        }
+        
         private static void Unmount()
         {
             if (_isoPath == "none")
@@ -25,10 +45,17 @@ namespace amecs.Actions
             
             SelectWindowsImage.DismountIso(_isoPath);
         }
+        public static bool InstallUSB() => InstallCore(true, false);
+        public static bool InstallISO() => InstallCore(false, true);
         
-        public static bool Install()
+        public static bool InstallCore(bool usb, bool iso)
         {
-            (_mountedPath, _isoPath, _, _, _) = SelectWindowsImage.GetMediaPath(true);
+            if (usb && !iso)
+                ConsoleTUI.OpenFrame.WriteCenteredLine("Select Windows USB drive");
+            if (iso && !usb)
+                ConsoleTUI.OpenFrame.WriteCenteredLine("Select Windows ISO file");
+
+            (_mountedPath, _isoPath, _, _, _) = SelectWindowsImage.GetMediaPath(true, usb: usb, iso: iso);
             if (_mountedPath == null) return false;
 
             if (!Directory.Exists(_mountedPath + @"\sources\sxs") || !Directory.GetFiles(_mountedPath + @"\sources\sxs", "*netfx3*").Any())

@@ -162,10 +162,10 @@ namespace amecs
 
             public string GetSubKey() => KeyName.Substring(KeyName.IndexOf('\\') + 1);
 
-            public object? GetCurrentValue(RegistryKey root)
+            public object? GetCurrentValue(RegistryKey root, bool backupValue)
             {
                 var subkey = GetSubKey();
-                return Registry.GetValue(root.Name + "\\" + subkey, ValueName, null);
+                return Registry.GetValue(root.Name + "\\" + subkey, backupValue ? ValueName + "Backup" : ValueName, null);
             }
 
             public static byte[] StringToByteArray(string hex)
@@ -247,7 +247,7 @@ namespace amecs
                 return true;
             }
 
-            public bool Apply()
+            public bool Apply(bool backup = false, bool useBackupValue = false)
             {
                 var roots = GetRoots();
 
@@ -256,7 +256,22 @@ namespace amecs
                     var root = _root;
                     var subKey = GetSubKey();
 
-                    if (GetCurrentValue(root) == Data) continue;
+                    var valueData = GetCurrentValue(root, false);
+                    if (backup && valueData != null)
+                    {
+                        Registry.SetValue(root.Name + "\\" + subKey, ValueName + "Backup", valueData, (RegistryValueKind)Type);
+                    }
+
+                    if (useBackupValue)
+                    {
+                        var backupData = GetCurrentValue(root, true);
+                        if (backupData != null)
+                        {
+                            Registry.SetValue(root.Name + "\\" + subKey, ValueName, backupData, (RegistryValueKind)Type);
+                            continue;
+                        }
+                    }
+                    if (valueData == Data) continue;
 
                     var opened = root.OpenSubKey(subKey);
                     if (opened == null && Operation == RegistryValueOperation.Set) continue;

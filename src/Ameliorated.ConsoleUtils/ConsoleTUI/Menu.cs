@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
 using amecs;
+using JetBrains.Annotations;
 
 namespace Ameliorated.ConsoleUtils
 {
@@ -40,7 +41,8 @@ namespace Ameliorated.ConsoleUtils
         private int pages;
         private int choicesPerPage;
 
-        public void Write()
+        public void Write() => Write(null);
+        public void Write([CanBeNull] string text)
         {
             if (Choices.Count < 1) throw new ArgumentException("Property Choices must have at least one choice.");
 
@@ -82,10 +84,12 @@ namespace Ameliorated.ConsoleUtils
                 {
                     var offset = ConsoleTUI.OpenFrame.DisplayOffset;
                     if (pages == 1)
+                    {
                         ConsoleTUI.OpenFrame.Close();
+                    }
                     else
                         ConsoleTUI.OpenFrame.Close($"Page 1/{pages}");
-                    Console.WriteLine(new string(' ', offset) + "Use the arrow keys to navigate");
+                    Console.WriteLine(new string(' ', offset) + (text ?? "Use the arrow keys to navigate"));
                 } catch (Exception e)
                 {
                     Console.WriteLine(e);
@@ -137,9 +141,9 @@ namespace Ameliorated.ConsoleUtils
 
         private List<MenuItem> ValidChoices = new List<MenuItem>();
 
-        private ConsoleTUI.Frame Frame;
+        public ConsoleTUI.Frame Frame;
 
-        public object Load()
+        public object Load(bool clearFrame, SemaphoreSlim lockObject = null)
         {
             var visCache = Console.CursorVisible;
             Console.CursorVisible = false;
@@ -151,9 +155,10 @@ namespace Ameliorated.ConsoleUtils
 
             Console.SetCursorPosition(Console.CursorLeft, menuStart + index);
 
-
             var allFluidChoices = Choices.Where(x => !x.IsStatic && !x.IsNextButton && !x.IsPreviousButton).ToList();
             var allStaticChoices = Choices.Where(x => x.IsStatic || x.IsNextButton || x.IsPreviousButton).ToList();
+
+            var startingChoices = new List<MenuItem>(Choices);
 
             int pageIndex = 1;
             ConsoleUtils.ClearInputBuffer();
@@ -163,7 +168,19 @@ namespace Ameliorated.ConsoleUtils
 
             while (true)
             {
+                lockObject?.Release();
                 keyPressed = Console.ReadKey(true).Key;
+                lockObject?.Wait();
+                if (!Choices.SequenceEqual(startingChoices))
+                {
+                    startingChoices = Choices;
+                    
+                    allFluidChoices = Choices.Where(x => !x.IsStatic && !x.IsNextButton && !x.IsPreviousButton).ToList();
+                    allStaticChoices = Choices.Where(x => x.IsStatic || x.IsNextButton || x.IsPreviousButton).ToList();
+                    currentChoices = allFluidChoices.Take(choicesPerPage).Concat(Choices.Where(x => x.IsStatic || (pages > 1 && x.IsNextButton))).ToList();
+                    currentValidChoices = currentChoices.Where(x => x.IsEnabled).ToList();
+                }
+                
                 if (keyPressed == ConsoleKey.DownArrow || keyPressed == ConsoleKey.S)
                 {
                     if (validIndex >= currentValidChoices.Count - 1) continue;
@@ -296,7 +313,7 @@ namespace Ameliorated.ConsoleUtils
                 }
             }
 
-            if (CloseFrame)
+            if (clearFrame && CloseFrame)
                 Frame.Clear();
             
             Console.CursorVisible = visCache;

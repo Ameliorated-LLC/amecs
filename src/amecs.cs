@@ -11,6 +11,7 @@ namespace amecs
 {
     public class amecs
     {
+        public static Task<bool> RunBasicActionTask(string status, string result, Action action, bool logoff = false, bool restart = false) => Task.FromResult(RunBasicAction(status, result, action, logoff, restart));
         public static bool RunBasicAction(string status, string result, Action action, bool logoff = false, bool restart = false)
         {
             ConsoleTUI.OpenFrame.WriteCentered(status);
@@ -206,7 +207,7 @@ namespace amecs
                 SelectionForeground = ConsoleColor.Green
             };
             mainMenu.Write();
-            return mainMenu.Load();
+            return mainMenu.Load(true);
         }
 
 

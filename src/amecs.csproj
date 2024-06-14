@@ -55,7 +55,13 @@
         <Reference Include="Microsoft.Win32.Primitives, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
           <HintPath>packages\Microsoft.Win32.Primitives.4.3.0\lib\net46\Microsoft.Win32.Primitives.dll</HintPath>
         </Reference>
+        <Reference Include="Microsoft.Win32.TaskScheduler, Version=2.11.0.0, Culture=neutral, PublicKeyToken=e25603a88b3aa7da, processorArchitecture=MSIL">
+          <HintPath>packages\TaskScheduler.2.11.0\lib\net45\Microsoft.Win32.TaskScheduler.dll</HintPath>
+        </Reference>
         <Reference Include="mscorlib" />
+        <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+          <HintPath>packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+        </Reference>
         <Reference Include="System" />
         <Reference Include="System.AppContext, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
           <HintPath>packages\System.AppContext.4.3.0\lib\net463\System.AppContext.dll</HintPath>
@@ -188,11 +194,16 @@
     <ItemGroup>
         <Compile Include="Actions\.NET.cs" />
         <Compile Include="Actions\AutoLogon.cs" />
+        <Compile Include="Actions\Browsers.cs" />
         <Compile Include="Actions\Deameliorate.cs" />
         <Compile Include="Actions\Elevation.cs" />
+        <Compile Include="Actions\Hibernation.cs" />
+        <Compile Include="Actions\Integrity.cs" />
         <Compile Include="Actions\Languages.cs" />
         <Compile Include="Actions\Lockscreen.cs" />
         <Compile Include="Actions\Profile.cs" />
+        <Compile Include="Actions\UIModifications.cs" />
+        <Compile Include="Actions\Update.cs" />
         <Compile Include="Actions\UsernameRequirement.cs" />
         <Compile Include="Actions\UserPass.cs" />
         <Compile Include="Actions\Users.cs" />
@@ -230,6 +241,11 @@
     </ItemGroup>
     <ItemGroup>
       <Content Include="app.manifest" />
+      <EmbeddedResource Include="Properties\UGC.zip" />
+      <EmbeddedResource Include="Properties\Fluent-AME.skin7" />
+      <EmbeddedResource Include="Properties\Fluent-Metro.skin" />
+      <EmbeddedResource Include="Properties\OpenShellSetup_4_4_191.exe" />
+      <EmbeddedResource Include="Properties\Firefox.zip" />
     </ItemGroup>
     <ItemGroup>
       <COMReference Include="IWshRuntimeLibrary">

@@ -40,6 +40,22 @@ namespace Ameliorated.ConsoleUtils
                 }
                 Console.Write(lines.Last().Insert(0, new string(' ', DisplayOffset)));
             }
+            public void Write(string text, ConsoleColor? foreground)
+            {
+                var lines =  text.SplitByLine();
+                if (lines.Length > AvailableLines())
+                    Clear();
+
+                foreach (var line in lines.Take(lines.Length - 1))
+                {
+                    ConsoleUtils.SetColor(foreground);
+                    Console.WriteLine(line.Insert(0, new string(' ', DisplayOffset)));
+                    ConsoleUtils.ResetColor();
+                }
+                ConsoleUtils.SetColor(foreground);
+                Console.Write(lines.Last().Insert(0, new string(' ', DisplayOffset)));
+                ConsoleUtils.ResetColor();
+            }
 
             public void WriteLine(string text)
             {
@@ -331,8 +347,6 @@ namespace Ameliorated.ConsoleUtils
 
                 var list = new List<CenteredString>();
 
-                var lines = new List<string>();
-
                 foreach (var line in text.SplitByLine())
                 {
                     if (line == "")
@@ -350,8 +364,12 @@ namespace Ameliorated.ConsoleUtils
                             var trimmedLength = splitLine.Length - splitLine.Trim(' ').Length;
                             splitLine = splitLine.Trim(' ');
 
-                            var wordIndex = splitLine.LastIndexOf(' ');
-                            if (wordIndex != -1 && options == LineCenterOptions.Word) splitLine = splitLine.Substring(0, wordIndex);
+                            if ((splitLine.Length + trimmedLength) == _maxWidth && line.Length - index - _maxWidth > 0)
+                            {
+                                var wordIndex = splitLine.LastIndexOf(' ');
+                                if (wordIndex != -1 && options == LineCenterOptions.Word)
+                                    splitLine = splitLine.Substring(0, wordIndex);
+                            }
 
                             index += splitLine.Length + trimmedLength;
 

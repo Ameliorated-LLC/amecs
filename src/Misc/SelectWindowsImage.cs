@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Security;
+using System.Threading;
 using System.Windows.Forms;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Dism;
@@ -76,28 +77,46 @@ namespace amecs.Misc
         /// <param name="isoBuildMustBeReturned">If true and the ISO build can't be retrieved, prompts a user with an error</param>
         public static (
             string MountedPath, string IsoPath, string Winver, int? Build, bool? VersionsMatch
-            ) GetMediaPath(bool winVersionsMustMatch = false, bool isoBuildMustBeReturned = false)
+            ) GetMediaPath(bool winVersionsMustMatch = false, bool isoBuildMustBeReturned = false, bool iso = false, bool usb = false)
         {
             var error = ((string)null, "none", (string)null, (int?)null, (bool?)null);
-            var choice =
-                new ChoicePrompt { Text = "To continue, Windows installation media is needed.\r\nDo you have a Windows USB instead of an ISO file? (Y/N): " }.Start();
-            if (!choice.HasValue) return error;
-            
+
+            bool usingFolder = usb;
+            if (iso == usb)
+            {
+                var choice =
+                    new ChoicePrompt
+                    {
+                        Text =
+                            "Windows installation media is required to restore files.\r\nTo select a Windows USB drive, press U\r\nTo select a Windows ISO file,  press I: ",
+                        Choices = "UI"
+                    }.Start();
+                if (!choice.HasValue) return error;
+                
+                usingFolder = choice == 0;
+            }
+
             // Folder/drive chosen
-            var usingFolder = choice == 0;
+
             if (usingFolder)
             {
-                var dlg = new FolderPicker
+                string value = null;
+                var thread = new Thread(() =>
                 {
-                    InputPath = Globals.UserFolder
-                };
+                    var dlg = new FolderPicker
+                    {
+                        InputPath = Globals.UserFolder
+                    };
+                    if (dlg.ShowDialog(IntPtr.Zero).GetValueOrDefault())
+                        value = dlg.ResultPath;
+                });
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
 
-                if (dlg.ShowDialog(IntPtr.Zero).GetValueOrDefault())
+                if (value != null)
                 {
-                    if (CheckFileViolation(dlg.ResultPath))
-                        return error;
-                    
-                    _mountedPath = dlg.ResultPath;
+                    _mountedPath = value;
                 }                     
                 else
                 {
@@ -111,18 +130,31 @@ namespace amecs.Misc
             {
                 // Mounting the ISO
                 var dialog = new OpenFileDialog();
-                dialog.Filter = "ISO Files (*.ISO)| *.ISO";
+                dialog.Filter = "ISO Files|*.ISO";
                 dialog.Multiselect = false;
                 dialog.InitialDirectory = Globals.UserFolder;
 
-                var window = new NativeWindow();
-                window.AssignHandle(Process.GetCurrentProcess().MainWindowHandle);
-                if (dialog.ShowDialog(window) == DialogResult.OK)
+                string value = null;
+                var thread = new Thread(() =>
+                {
+                    var window = new NativeWindow();
+                    window.AssignHandle(Process.GetCurrentProcess().MainWindowHandle);
+                    if (dialog.ShowDialog(window) == DialogResult.OK)
+                    {
+                        value = dialog.FileName;
+                    }
+                });
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
+                
+
+                if (value != null)
                 {
                     _isoPath = dialog.FileName;
                     if (CheckFileViolation(_isoPath)) return error;
                     Console.WriteLine();
-                    ConsoleTUI.OpenFrame.WriteCentered("\r\nMounting ISO");
+                    ConsoleTUI.OpenFrame.WriteCentered("Mounting ISO");
                 }
                 else
                 {

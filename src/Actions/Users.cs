@@ -7,6 +7,7 @@ using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Win32;
 
@@ -14,20 +15,41 @@ namespace amecs.Actions
 {
     public class Users
     {
-        public static bool ShowMenu()
+        public static Task<bool> ShowMenu()
         {
             while (true)
             {
                 Program.Frame.Clear();
+                
+                bool autoLogonEnabled = new Reg.Value()
+                                        {
+                                            KeyName = @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon",
+                                            ValueName = "DefaultUsername",
+                                            Data = Globals.Username,
+                                        }.IsEqual() &&
+                                        new Reg.Value()
+                                        {
+                                            KeyName = @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon",
+                                            ValueName = "AutoAdminLogon",
+                                            Data = "1",
+                                        }.IsEqual();
 
                 var mainMenu = new Ameliorated.ConsoleUtils.Menu()
                 {
                     Choices =
                     {
+                        new Menu.MenuItem("Change Username", new Func<bool>(UserPass.ChangeUsername)),
+                        new Menu.MenuItem("Change Password", new Func<bool>(UserPass.ChangePassword)),
+                        new Menu.MenuItem("Change Display Name", new Func<bool>(UserPass.ChangeDisplayName)),
+                        new Menu.MenuItem("Change Profile Image", new Func<bool>(Profile.ChangeImage)),
+                        autoLogonEnabled
+                            ? new Menu.MenuItem("Disable AutoLogon", new Func<bool>(AutoLogon.Disable))
+                            : new Menu.MenuItem("Enable AutoLogon", new Func<bool>(AutoLogon.Enable)),
+                        Menu.MenuItem.Blank,
+                        new Menu.MenuItem("Change Administrator Password", new Func<bool>(UserPass.ChangeAdminPassword)),
                         Globals.WinVer <= 19043 ?
                             new Menu.MenuItem("Create New User (Legacy)", new Func<bool>(CreateNewUserLegacy)) : 
                             new Menu.MenuItem("Create New User", new Func<bool>(CreateNewUser)),
-                        
                         Menu.MenuItem.Blank,
                         new Menu.MenuItem("Return to Menu", null),
                         new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit))
@@ -38,15 +60,15 @@ namespace amecs.Actions
                 try
                 {
                     mainMenu.Write();
-                    var res = mainMenu.Load();
+                    var res = mainMenu.Load(true);
                     if (res == null)
-                        return true;
+                        return Task.FromResult(true);
                     result = (Func<bool>)res;
                 } catch (Exception e)
                 {
                     Console.WriteLine(e);
                     Console.ReadLine();
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 try

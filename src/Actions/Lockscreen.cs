@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security;
 using System.Threading;
+using System.Threading.Tasks;
 using Ameliorated.ConsoleUtils;
 using Microsoft.Win32;
 using System.Windows.Forms;
@@ -12,7 +13,7 @@ namespace amecs.Actions
 {
     public class Lockscreen
     {
-        public static bool ChangeImage()
+        public static Task<bool> ChangeImage()
         {
             ConsoleTUI.OpenFrame.WriteCenteredLine("Select an image");
             
@@ -35,12 +36,12 @@ namespace amecs.Actions
                 {
                     Console.WriteLine();
                     ConsoleTUI.OpenFrame.Close("Security error: " + e.Message, ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 Console.WriteLine();
                 var choice = new ChoicePrompt() { Text = "Remove lockscreen blur? (Y/N): " }.Start();
-                if (!choice.HasValue) return true;
+                if (!choice.HasValue) return Task.FromResult(true);
                 bool blur = choice == 0;
 
                 ConsoleTUI.OpenFrame.WriteCentered("\r\nSetting lockscreen image");
@@ -100,13 +101,13 @@ namespace amecs.Actions
                 }
                 Console.WriteLine();
                 ConsoleTUI.OpenFrame.Close("Lockscreen image changed successfully", ConsoleColor.Green, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
-                return true;
+                return Task.FromResult(true);
             }
             else
             {
                 Console.WriteLine();
                 ConsoleTUI.OpenFrame.Close("You must select an image.", new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
-                return true;
+                return Task.FromResult(true);
             }
         }
     }

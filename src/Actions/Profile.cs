@@ -9,6 +9,7 @@ using Ameliorated.ConsoleUtils;
 using System.Drawing;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Threading.Tasks;
 
 namespace amecs.Actions
 {
@@ -23,12 +24,24 @@ namespace amecs.Actions
             dialog.Filter = "Image Files (*.jpg; *.jpeg; *.png; *.bmp; *.jfif)| *.jpg; *.jpeg; *.png; *.bmp; *.jfif"; // Filter files by extension
             dialog.Multiselect = false;
             dialog.InitialDirectory = Globals.UserFolder;
-
-            NativeWindow window = new NativeWindow();
-            window.AssignHandle(Process.GetCurrentProcess().MainWindowHandle);
-            if (dialog.ShowDialog(window) == DialogResult.OK)
+            string value = null;
+            var thread = new Thread(() =>
             {
-                string file;
+                var window = new NativeWindow();
+                window.AssignHandle(Process.GetCurrentProcess().MainWindowHandle);
+                if (dialog.ShowDialog(window) == DialogResult.OK)
+                {
+                    value = dialog.FileName;
+                }
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            if (value != null)
+            {
+                string file = value;
+                /*
                 try
                 {
                     file = dialog.FileName;
@@ -39,6 +52,7 @@ namespace amecs.Actions
                     ConsoleTUI.OpenFrame.Close("Security error: " + e.Message, ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
                     return false;
                 }
+                */
                 
                 ConsoleTUI.OpenFrame.WriteCentered("\r\nSetting profile image");
 
