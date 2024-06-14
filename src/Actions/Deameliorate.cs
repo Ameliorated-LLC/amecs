@@ -234,7 +234,9 @@ Continue? (Y/N): "
                              $@"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{{{ExplorerPatcherId}}}_ExplorerPatcher",
                              @"HKLM\Software\Microsoft\Windows\CurrentVersion\Policies",
                              @"HKLM\Software\Policies",
-                             @"HKLM\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies"
+                             @"HKLM\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Policies",
+                             @"HKLM\Software\AME\Playbooks\Applied\{9010E718-4B54-443F-8354-D893CD50FDDE}",
+                             @"HKLM\Software\AME\Playbooks\Applied\{513722D2-CE95-4D2A-A88A-53570642BC4E}"
                          })
                 {
                     var hive = RegistryHive.LocalMachine;
