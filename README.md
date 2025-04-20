@@ -1,12 +1,13 @@
-# Central AME Script (amecs)
+# AME10 Settings
 
-Script for automating a large assortment of AME related actions.
+Tool for automating a large assortment actions on an AME10 system.
 
-![Central AME Script Screenshot](screenshot.png)
+> [!IMPORTANT]
+> This is only meant for use with the legacy [AME10 playbook](https://github.com/Ameliorated-LLC/AME-10). For Privacy+, see [ame-settings-cli](https://github.com/Ameliorated-LLC/ame-settings-cli)
 
 ## Usage
 
-You can download the script by going to the [latest release](https://git.ameliorated.info/Styris/amecs/releases/latest) and selecting `amecs.exe` from the **Downloads** section. Once downloaded, simply run `amecs.exe`.
+You can download the script by going to the [latest release](https://github.com/Ameliorated-LLC/ame-settings-legacy/releases/latest) and selecting `ame10_settings.exe` from the **Downloads** section. Once downloaded, simply run `ame10_settings.exe`.
 
 ## Summary
 
