@@ -13,6 +13,7 @@ namespace amecs
         public static string UserSID = null;
         public static string UserFolder = null;
         public static bool UserElevated = false;
+        public static bool? PendingUserElevationChange = null;
 
         public static string UserHive
         {

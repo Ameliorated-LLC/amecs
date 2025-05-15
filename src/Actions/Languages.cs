@@ -59,6 +59,15 @@ namespace amecs.Actions
                         //    }
                         //    : new Menu.MenuItem("Uninstall Language Pack", new Func<bool>(ShowRemoveLanguagePackMenu)),
                         Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
                         new Menu.MenuItem("Return to Menu", null),
                         new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit))
                     },

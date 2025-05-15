@@ -14,7 +14,7 @@ namespace amecs.Actions
 {
     public class UIModifications
     {
-        public static Task<bool> Enable() => amecs.RunBasicActionTask("Enabling AME UI Modifications", "AME UI modifications are now enabled",
+        public static bool Enable() => amecs.RunBasicAction("Enabling AME UI Modifications", "AME UI modifications are now enabled",
             () =>
             {
                 new Reg.Value()
@@ -322,7 +322,7 @@ namespace amecs.Actions
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
 
-        public static Task<bool> Disable() => amecs.RunBasicActionTask("Disabling AME UI Modifications", "AME UI modifications are now disabled",
+        public static bool Disable() => amecs.RunBasicAction("Disabling AME UI Modifications", "AME UI modifications are now disabled",
             () =>
             {
                 new Reg.Value()

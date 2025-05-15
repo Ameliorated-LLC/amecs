@@ -7,7 +7,7 @@ namespace amecs.Actions
 {
     public static class Hibernation
     {
-        public static Task<bool> EnableHibernation() =>amecs.RunBasicActionTask("Enabling hibernation","Enabled hibernation successfully",() => 
+        public static bool EnableHibernation() =>amecs.RunBasicAction("Enabling hibernation","Enabled hibernation successfully",() => 
         { 
             Thread.Sleep(1600); 
             
@@ -22,7 +22,7 @@ namespace amecs.Actions
                 throw new Exception("powercfg exited with a non-zero exitcode.\r\nHibernation may not be supported by your hardware.");
         });
 
-        public static Task<bool> DisableHibernation() =>amecs.RunBasicActionTask("Disabling hibernation","Disabled hibernation successfully",() => 
+        public static bool DisableHibernation() =>amecs.RunBasicAction("Disabling hibernation","Disabled hibernation successfully",() => 
         { 
             Thread.Sleep(1600); 
             

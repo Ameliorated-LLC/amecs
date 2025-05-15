@@ -37,6 +37,15 @@ Continue? (Y/N): "
                     new Menu.MenuItem("Uninstall AME using a Windows USB", new Func<bool>(DeameliorateUSB)),
                     new Menu.MenuItem("Uninstall AME using a Windows ISO", new Func<bool>(DeameliorateISO)),
                     Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
                     new Menu.MenuItem("Return to Menu", new Func<bool>(() => true)),
                     new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit)),
                 },
@@ -58,6 +67,15 @@ Continue? (Y/N): "
                 {
                     new Menu.MenuItem("Uninstall AME using a Windows USB", new Func<bool>(DeameliorateUSB)),
                     new Menu.MenuItem("Uninstall AME using a Windows ISO", new Func<bool>(DeameliorateISO)),
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
+                    Menu.MenuItem.Blank,
                     Menu.MenuItem.Blank,
                     new Menu.MenuItem("Return to Menu", new Func<bool>(() => true)),
                     new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit)),
@@ -292,6 +310,7 @@ Continue? (Y/N): "
 
                         winlogon?.SetValue("AutoRestartShell", 1);
                     }
+                    
                     Console.WriteLine();
                 }
             } catch (Exception e)
@@ -347,6 +366,40 @@ Continue? (Y/N): "
 
                     key.Close();
                 }
+                
+                Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AppFetch", false);
+                Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Privacy+ Settings", false);
+                Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AME10 Settings", false);
+                foreach (var userDir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables(@"%SYSTEMDRIVE%\Users")))
+                {
+                    if (File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\Privacy+ Settings.lnk")))
+                        File.Delete(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\Privacy+ Settings.lnk"));
+                    if (File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\AME10 Settings.lnk")))
+                        File.Delete(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\AME10 Settings.lnk"));
+                }
+                    
+                if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\Privacy+ Settings.lnk")))
+                    File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\Privacy+ Settings.lnk"));
+                if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\AME10 Settings.lnk")))
+                    File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\AME10 Settings.lnk"));
+                
+                foreach (var userDir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables(@"%SYSTEMDRIVE%\Users")))
+                {
+                    if (File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk")))
+                        File.Delete(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk"));
+                }
+
+                if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\App Fetch Experimental.lnk")))
+                    File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\App Fetch Experimental.lnk"));
+                try
+                {
+                    if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\AME\appfetch.exe")))
+                        File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\AME\appfetch.exe"));
+                }
+                catch (Exception e)
+                {
+                }
+                
                 Thread.Sleep(2000);
             }
             ConsoleTUI.OpenFrame.WriteCentered(

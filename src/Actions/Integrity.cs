@@ -224,12 +224,13 @@ namespace amecs.Actions
         {
             Console.WriteLine();
 
+            bool win11 = Win32.SystemInfoEx.WindowsVersion.MajorVersion >= 11; 
             switch (result) {
                 case 1:
-                    ConsoleTUI.OpenFrame.Close("AME integrity validated", ConsoleColor.Green, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
+                    ConsoleTUI.OpenFrame.Close($"{(win11 ? "Privacy+" : "AME10")} integrity validated", ConsoleColor.Green, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
                     break;
                 case 2:
-                    ConsoleTUI.OpenFrame.Close("AME integrity compromised, contact the team for help.", ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
+                    ConsoleTUI.OpenFrame.Close($"{(win11 ? "Privacy+" : "AME10")} integrity compromised, contact the team for help.", ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});
                     break;
                 case 3:
                     ConsoleTUI.OpenFrame.Close("Your system is not ameliorated.", ConsoleColor.Red, Console.BackgroundColor, new ChoicePrompt() {AnyKey = true, Text = "Press any key to return to the Menu: "});

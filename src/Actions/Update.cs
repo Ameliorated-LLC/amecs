@@ -379,7 +379,7 @@ namespace amecs.Actions
             {
                 response.EnsureSuccessStatusCode();
 
-                if (!size.HasValue)
+                if (response.Content.Headers.ContentLength.HasValue && response.Content.Headers.ContentLength.Value != 0)
                     size = response.Content.Headers.ContentLength;
 
                 using (var contentStream = await response.Content.ReadAsStreamAsync())

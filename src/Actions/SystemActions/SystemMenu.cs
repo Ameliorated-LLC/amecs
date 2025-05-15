@@ -68,20 +68,20 @@ namespace amecs.Actions.SystemActions
                     EscapeValue = null,
                     Choices =
                     {
-                        Globals.UserElevated
-                            ? new Menu.MenuItem("Enable Enhanced Security", new Func<Task<bool>>(Elevation.DeElevate))
-                            : new Menu.MenuItem("Disable Enhanced Security", new Func<Task<bool>>(Elevation.Elevate)),
+                        Globals.PendingUserElevationChange ?? Globals.UserElevated
+                            ? new Menu.MenuItem("Enable Enhanced Security", new Func<bool>(Elevation.DeElevate))
+                            : new Menu.MenuItem("Disable Enhanced Security", new Func<bool>(Elevation.Elevate)),
                         !uiModified
-                            ? new Menu.MenuItem("Enable UI Modifications", new Func<Task<bool>>(UIModifications.Enable))
-                            : new Menu.MenuItem("Disable UI Modifications", new Func<Task<bool>>(UIModifications.Disable)),
+                            ? new Menu.MenuItem("Enable UI Modifications", new Func<bool>(UIModifications.Enable))
+                            : new Menu.MenuItem("Disable UI Modifications", new Func<bool>(UIModifications.Disable)),
                         usernameRequirement
                             ? new Menu.MenuItem("Disable Corporate Login",
-                                new Func<Task<bool>>(UsernameRequirement.Disable))
+                                new Func<bool>(UsernameRequirement.Disable))
                             : new Menu.MenuItem("Enable Corporate Login",
-                                new Func<Task<bool>>(UsernameRequirement.Enable)),
+                                new Func<bool>(UsernameRequirement.Enable)),
                         hibernation ? 
-                            new Menu.MenuItem("Disable Hibernation", new Func<Task<bool>>(Hibernation.DisableHibernation)) : 
-                            new Menu.MenuItem("Enable Hibernation", new Func<Task<bool>>(Hibernation.EnableHibernation)),
+                            new Menu.MenuItem("Disable Hibernation", new Func<bool>(Hibernation.DisableHibernation)) : 
+                            new Menu.MenuItem("Enable Hibernation", new Func<bool>(Hibernation.EnableHibernation)),
                         settingsHidden ?
                             new Menu.MenuItem("Restore Hidden Settings Pages", new Func<bool>(Extra.RestoreSettingsPages)) : 
                             new Menu.MenuItem("Hide Restored Settings Pages", new Func<bool>(Extra.HideSettingsPages)),
@@ -96,6 +96,7 @@ namespace amecs.Actions.SystemActions
                         Globals.WinVer <= 19043 ?
                             new Menu.MenuItem("Create New User (Legacy)", new Func<bool>(CreateUser.CreateNewUserLegacy)) : 
                             new Menu.MenuItem("Create New User", new Func<bool>(CreateUser.CreateNewUser)), 
+                        Menu.MenuItem.Blank,
                         Menu.MenuItem.Blank,
                         new Menu.MenuItem("Return to Menu", null),
                         new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit))

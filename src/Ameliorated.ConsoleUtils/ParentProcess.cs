@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 
 namespace Ameliorated.ConsoleUtils
 {
@@ -8,7 +9,7 @@ namespace Ameliorated.ConsoleUtils
     {
         private static readonly uint TH32CS_SNAPPROCESS = 2;
 
-        public static string ProcessName = Get().ProcessName;
+        [CanBeNull] public static string ProcessName = Get()?.ProcessName;
 
         public static Process Get()
         {

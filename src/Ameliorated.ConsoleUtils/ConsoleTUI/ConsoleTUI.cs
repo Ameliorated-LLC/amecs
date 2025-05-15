@@ -71,7 +71,7 @@ namespace Ameliorated.ConsoleUtils
 
             try
             {
-                if ((Console.CursorLeft == 0 && Console.CursorTop == 0) || ParentProcess.ProcessName.Equals("Explorer", StringComparison.OrdinalIgnoreCase))
+                if ((Console.CursorLeft == 0 && Console.CursorTop == 0) || (ParentProcess.ProcessName ?? "Explorer").Equals("Explorer", StringComparison.OrdinalIgnoreCase))
                 {
                     var bd = (int)BackdropType.Mica;
                     var trueA = 0x01;
@@ -110,7 +110,8 @@ namespace Ameliorated.ConsoleUtils
             IsInitialized = false;
 
             var parent = ParentProcess.ProcessName;
-            if (parent.Equals("Explorer", StringComparison.CurrentCultureIgnoreCase)) return;
+            if (parent == null || parent.Equals("Explorer", StringComparison.CurrentCultureIgnoreCase))
+                return;
 
             try
             {

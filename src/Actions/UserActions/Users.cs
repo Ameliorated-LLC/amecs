@@ -46,6 +46,13 @@ namespace amecs.Actions
                             ? new Menu.MenuItem("Disable AutoLogon", new Func<bool>(AutoLogon.Disable))
                             : new Menu.MenuItem("Enable AutoLogon", new Func<bool>(AutoLogon.Enable)),
                         Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank, 
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
                         new Menu.MenuItem("Return to Menu", null),
                         new Menu.MenuItem("Exit", new Func<bool>(Globals.Exit))
                     },

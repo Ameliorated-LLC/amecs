@@ -9,13 +9,14 @@ namespace amecs.Actions
 {
     public class Elevation
     {
-        public static Task<bool> Elevate() => amecs.RunBasicActionTask("Disabling enhanced security", "Enhanced security is now disabled", new Action(() =>
+        public static bool Elevate() => amecs.RunBasicAction("Disabling enhanced security", "Enhanced security is now disabled", new Action(() =>
         {
             Globals.Administrators.Members.Add(Globals.User);
             Globals.Administrators.Save();
             Thread.Sleep(1000);
+            Globals.PendingUserElevationChange = true;
         }), true);
-        public static Task<bool> DeElevate() => amecs.RunBasicActionTask("Enabling enhanced security", "Enhanced security is now enabled", new Action(() =>
+        public static bool DeElevate() => amecs.RunBasicAction("Enabling enhanced security", "Enhanced security is now enabled", new Action(() =>
         {
             using PrincipalContext context = new PrincipalContext(ContextType.Machine);
 
@@ -26,6 +27,7 @@ namespace amecs.Actions
             Globals.Administrators.Members.Remove(Globals.User);
             Globals.Administrators.Save();
             Thread.Sleep(1000);
+            Globals.PendingUserElevationChange = false;
         }), false, true);
     }
 }

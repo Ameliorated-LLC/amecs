@@ -71,6 +71,10 @@ namespace amecs.Actions
                         Menu.MenuItem.Blank,
                         new Menu.MenuItem("Remove AME Tools", new Func<Task<bool>>(RemoveAMETools)),
                         Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
+                        Menu.MenuItem.Blank,
                         new Menu.MenuItem("Return to Menu", null),
                         new Menu.MenuItem("Exit", new Func<Task<bool>>(Globals.ExitAsync))
                     },
@@ -191,9 +195,12 @@ namespace amecs.Actions
                             using (var appFetchKey = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AppFetch"))
                             {
                                 appFetchKey!.SetValue("DisplayName", "App Fetch Experimental", RegistryValueKind.String);
+                                appFetchKey!.SetValue("PublisherName", "Ameliorated LLC", RegistryValueKind.String);
                                 appFetchKey.SetValue("DisplayIcon", dest, RegistryValueKind.String);
                                 appFetchKey.SetValue("UninstallString", $"\"{dest}\" --uninstall", RegistryValueKind.String);
                                 appFetchKey.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+                                appFetchKey.SetValue("NoModify", 1, RegistryValueKind.DWord);
+                                appFetchKey.SetValue("EstimatedSize", 41062, RegistryValueKind.DWord);
                             }
                         }
                         catch (Exception e)
@@ -207,18 +214,33 @@ namespace amecs.Actions
 
                             throw new Exception(e.Message);
                         }
-                        foreach (var userDir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables(@"%SYSTEMDRIVE%\Users")))
+
+                        try
                         {
-                            if (Directory.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned")))
+
+                            foreach (var userDir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables(@"%SYSTEMDRIVE%\Users")))
                             {
-                                if (!File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk")))
+                                if (Directory.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned")))
                                 {
-                                    var shell = new WshShell();
-                                    var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk"));
-                                    shortcut.TargetPath = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\Windows\System32\appfetch.exe");
-                                    shortcut.Save();
+                                    if (!File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk")))
+                                    {
+                                        var shell1 = new WshShell();
+                                        var shortcut1 = (IWshShortcut)shell1.CreateShortcut(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk"));
+                                        shortcut1.TargetPath = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\AME\appfetch.exe");
+                                        shortcut1.Save();
+                                    }
                                 }
                             }
+
+                            Directory.CreateDirectory(
+                                Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated"));
+                            var shell2 = new WshShell();
+                            var shortcut2 = (IWshShortcut)shell2.CreateShortcut(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\App Fetch Experimental.lnk"));
+                            shortcut2.TargetPath = Environment.ExpandEnvironmentVariables(@"%PROGRAMDATA%\AME\appfetch.exe");
+                            shortcut2.Save();
+                        }
+                        catch (Exception e)
+                        {
                         }
                     }
                 }
@@ -329,9 +351,12 @@ namespace amecs.Actions
                             using (var settingsKey = Registry.LocalMachine.CreateSubKey($@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{(win11 ? "Privacy+" : "AME10")} Settings"))
                             {
                                 settingsKey!.SetValue("DisplayName", $"{(win11 ? "Privacy+" : "AME10")} Settings", RegistryValueKind.String);
+                                settingsKey!.SetValue("PublisherName", "Ameliorated LLC", RegistryValueKind.String);
                                 settingsKey.SetValue("DisplayIcon", dest, RegistryValueKind.String);
                                 settingsKey.SetValue("UninstallString", $"\"{dest}\" --uninstall", RegistryValueKind.String);
                                 settingsKey.SetValue("NoRepair", 1, RegistryValueKind.DWord);
+                                settingsKey.SetValue("NoModify", 1, RegistryValueKind.DWord);
+                                settingsKey.SetValue("EstimatedSize", 19558, RegistryValueKind.DWord);
                             }
                         }
                         catch (Exception e)
@@ -345,18 +370,33 @@ namespace amecs.Actions
 
                             throw new Exception(e.Message);
                         }
-                        foreach (var userDir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables(@"%SYSTEMDRIVE%\Users")))
+                        
+                        try
                         {
-                            if (Directory.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned")))
+
+                            foreach (var userDir in Directory.GetDirectories(Environment.ExpandEnvironmentVariables(@"%SYSTEMDRIVE%\Users")))
                             {
-                                if (!File.Exists(Path.Combine(userDir, $@"AppData\Roaming\OpenShell\Pinned\{(win11 ? "Privacy+" : "AME10")} Settings.lnk")))
+                                if (Directory.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned")))
                                 {
-                                    var shell = new WshShell();
-                                    var shortcut = (IWshShortcut)shell.CreateShortcut(Path.Combine(userDir, $@"AppData\Roaming\OpenShell\Pinned\{(win11 ? "Privacy+" : "AME10")} Settings.lnk"));
-                                    shortcut.TargetPath = Environment.ExpandEnvironmentVariables($@"%PROGRAMDATA%\AME\{(win11 ? "privacy+_settings" : "ame10_settings")}.exe");
-                                    shortcut.Save();
+                                    if (!File.Exists(Path.Combine(userDir, $@"AppData\Roaming\OpenShell\Pinned\{(win11 ? "Privacy+" : "AME10")} Settings.lnk")))
+                                    {
+                                        var shell1 = new WshShell();
+                                        var shortcut1 = (IWshShortcut)shell1.CreateShortcut(Path.Combine(userDir, $@"AppData\Roaming\OpenShell\Pinned\{(win11 ? "Privacy+" : "AME10")} Settings.lnk"));
+                                        shortcut1.TargetPath = Environment.ExpandEnvironmentVariables($@"%PROGRAMDATA%\AME\{(win11 ? "privacy+_settings" : "ame10_settings")}.exe");
+                                        shortcut1.Save();
+                                    }
                                 }
                             }
+
+                            Directory.CreateDirectory(
+                                Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated"));
+                            var shell2 = new WshShell();
+                            var shortcut2 = (IWshShortcut)shell2.CreateShortcut(Environment.ExpandEnvironmentVariables($@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\{(win11 ? "Privacy+" : "AME10")} Settings.lnk"));
+                            shortcut2.TargetPath = Environment.ExpandEnvironmentVariables($@"%PROGRAMDATA%\AME\{(win11 ? "privacy+_settings" : "ame10_settings")}.exe");
+                            shortcut2.Save();
+                        }
+                        catch (Exception e)
+                        {
                         }
                     }
                 }
@@ -410,6 +450,9 @@ namespace amecs.Actions
                         if (File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk")))
                             File.Delete(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\App Fetch Experimental.lnk"));
                     }
+                    
+                    if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\App Fetch Experimental.lnk")))
+                        File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\App Fetch Experimental.lnk"));
 
                     Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Privacy+ Settings", false);
                     Registry.LocalMachine.DeleteSubKeyTree(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\AME10 Settings", false);
@@ -427,6 +470,11 @@ namespace amecs.Actions
                         if (File.Exists(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\AME10 Settings.lnk")))
                             File.Delete(Path.Combine(userDir, @"AppData\Roaming\OpenShell\Pinned\AME10 Settings.lnk"));
                     }
+                    
+                    if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\Privacy+ Settings.lnk")))
+                        File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\Privacy+ Settings.lnk"));
+                    if (File.Exists(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\AME10 Settings.lnk")))
+                        File.Delete(Environment.ExpandEnvironmentVariables(@"%ProgramData%\Microsoft\Windows\Start Menu\Programs\Ameliorated\AME10 Settings.lnk"));
 
                     try
                     {
